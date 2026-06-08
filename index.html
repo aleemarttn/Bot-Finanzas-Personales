@@ -83,6 +83,25 @@
   footer{color:var(--muted);font-size:12px;text-align:center;margin-top:28px}
   .hint{font-size:11px;color:var(--muted);margin-top:-4px}
 
+  /* Presupuestos */
+  .pbgrp{margin-bottom:12px}
+  .pbrow{margin:9px 0}
+  .pbrow.sub{margin-left:14px}
+  .pbhead{display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-bottom:5px;gap:8px}
+  .pbhead .nm{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pbhead .vals{color:var(--muted);font-size:12px;white-space:nowrap}
+  .pbhead .vals b{font-weight:700;margin-left:4px}
+  .pbbar{height:8px;background:var(--card2);border-radius:20px;overflow:hidden}
+  .pbfill{height:100%;border-radius:20px;transition:width .3s}
+  .pbnone{color:var(--muted);font-size:12px}
+  .pbset{background:none;border:1px solid var(--border);color:var(--accent);font-size:11px;font-weight:600;padding:3px 8px;border-radius:8px;cursor:pointer;white-space:nowrap}
+  .pbset:hover{border-color:var(--accent)}
+  .preslist{display:flex;flex-direction:column;gap:9px;max-height:52vh;overflow-y:auto;margin-bottom:6px}
+  .presitem{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .presitem.sub{margin-left:14px}
+  .presitem label{margin:0;color:var(--text);font-size:13px;font-weight:500}
+  .presitem input{width:110px}
+
   /* Modal */
   .overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;
         align-items:center;justify-content:center;padding:20px;z-index:50}
@@ -137,6 +156,12 @@
     <div class="card">
       <h2>🧠 Recomendador</h2>
       <div class="tips" id="tips"></div>
+    </div>
+    <div class="card">
+      <h2>🎯 Presupuestos
+        <button class="linkbtn" id="btnEditarPres" type="button">Editar presupuestos</button>
+      </h2>
+      <div id="presWrap"></div>
     </div>
     <div class="card">
       <h2>➕ Añadir movimiento
@@ -197,6 +222,21 @@
   </div>
 </div>
 
+<!-- Modal editar presupuestos -->
+<div class="overlay" id="overlayPres">
+  <div class="modal">
+    <h3>🎯 Presupuestos mensuales</h3>
+    <form id="formPres" style="gap:14px">
+      <div class="preslist" id="preslist"></div>
+      <div class="hint">Importe en € por categoría. Deja en blanco (o 0) para quitar el presupuesto.</div>
+      <div class="actions">
+        <button type="button" class="ghost" id="cancelPres">Cancelar</button>
+        <button type="submit" class="submit" style="flex:1;margin:0">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
 /* ============================================================
    CONFIGURACIÓN — pega aquí tus claves de Supabase
@@ -205,7 +245,7 @@ const SUPABASE_URL = "https://jtkhvvkfgqotvhljtybp.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_BVJ9sAnDj4tB25sVsZss8A_26cm57wL";
 
 let supa=null, DEMO=false, tipoSel="gasto", tipoCatSel="gasto";
-let categorias=[], transacciones=[];
+let categorias=[], transacciones=[], presupuestos=[];
 let chartCat=null, chartMes=null;
 let catDrill=null, rangoMeses=6;   // drill-down del donut y rango de la evolución
 const eur = n => new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(n||0);
@@ -255,6 +295,12 @@ function datosDemo(){
     {id:15,fecha:tm(2,7),importe:900,tipo:'gasto',categoria_id:4,descripcion:'Varios'},
     {id:16,fecha:tm(3,5),importe:1750,tipo:'ingreso',categoria_id:10,descripcion:'Nómina'},
   ];
+  presupuestos=[
+    {id:1,categoria_id:1,limite_mes:120},
+    {id:2,categoria_id:101,limite_mes:60},
+    {id:3,categoria_id:2,limite_mes:300},
+    {id:4,categoria_id:5,limite_mes:100},
+  ];
 }
 
 /* ====== Carga ====== */
@@ -262,12 +308,13 @@ async function cargar(){
   const ok = SUPABASE_URL.startsWith('http') && SUPABASE_ANON_KEY.length>20;
   if(ok){
     supa=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
-    const [c,t]=await Promise.all([
+    const [c,t,p]=await Promise.all([
       supa.from('categorias').select('*'),
-      supa.from('transacciones').select('*').order('fecha',{ascending:false})
+      supa.from('transacciones').select('*').order('fecha',{ascending:false}),
+      supa.from('presupuestos').select('*')
     ]);
     if(c.error||t.error){console.error(c.error||t.error);datosDemo();}
-    else{categorias=c.data;transacciones=t.data;DEMO=false;}
+    else{categorias=c.data;transacciones=t.data;presupuestos=(p&&!p.error&&p.data)?p.data:[];DEMO=false;}
   } else datosDemo();
   pintarStatus(); render();
 }
@@ -290,7 +337,7 @@ function totalesMes(mes){
 /* ====== Render ====== */
 function render(){
   renderKPIs();renderChartCat();renderChartMes();renderTabla();
-  renderTips();renderCategoriasSelect();
+  renderTips();renderCategoriasSelect();renderPresupuestos();
 }
 
 function renderKPIs(){
@@ -414,12 +461,96 @@ function renderTips(){
   const subsc=categorias.find(c=>/suscrip/i.test(c.nombre));
   if(subsc&&map[subsc.id])tips.push({t:'',i:'📱',h:`Pagas <b>${eur(map[subsc.id])}</b> en suscripciones este mes. ¿Usas todas?`});
 
+  // presupuestos superados este mes
+  const exced=categorias.filter(c=>c.tipo==='gasto').map(c=>{const p=presupuestos.find(x=>x.categoria_id===c.id);if(!p||!(+p.limite_mes>0))return null;const g=gastoExactoMes(c.id);return g>+p.limite_mes?{c,g,lim:+p.limite_mes}:null;}).filter(Boolean);
+  if(exced.length){const e0=exced[0];tips.push({t:'warn',i:'🎯',h:`Te has pasado del presupuesto de <b>${e0.c.nombre}</b>: ${eur(e0.g)} de ${eur(e0.lim)}${exced.length>1?` (y ${exced.length-1} más)`:''}.`});}
+
   if(transacciones.filter(t=>mesDe(t.fecha)===m).length<3)
     tips.push({t:'',i:'📝',h:`Registra más movimientos para que los consejos sean precisos.`});
   if(!tips.length)tips.push({t:'good',i:'👌',h:'Todo en orden por ahora.'});
 
   $('tips').innerHTML=tips.map(x=>`<div class="tip ${x.t}"><div class="ico">${x.i}</div><div class="txt">${x.h}</div></div>`).join('');
 }
+
+/* ====== Presupuestos ====== */
+const presDe = id => presupuestos.find(p=>p.categoria_id===id);
+// gasto del mes en curso SOLO de esa categoría exacta (sin sumar subcategorías)
+function gastoExactoMes(catId){
+  const m=mesActual(); let s=0;
+  transacciones.forEach(t=>{ if(t.tipo==='gasto'&&t.categoria_id===catId&&mesDe(t.fecha)===m) s+=+t.importe; });
+  return s;
+}
+const colorPct = pct => pct>100?'#ef4444':(pct>=80?'#eab308':'#22c55e');
+
+function renderPresupuestos(){
+  const cont=$('presWrap');
+  const mains=categorias.filter(c=>c.tipo==='gasto'&&!c.padre_id);
+  if(!mains.length){cont.innerHTML='<div class="empty">No hay categorías de gasto.</div>';return;}
+  const fila=(c,esSub)=>{
+    const p=presDe(c.id), gastado=gastoExactoMes(c.id);
+    if(!p||!(+p.limite_mes>0)){
+      return `<div class="pbrow${esSub?' sub':''}">
+        <div class="pbhead">
+          <span class="nm">${c.emoji} ${c.nombre}</span>
+          <button class="pbset" data-cat="${c.id}">+ presupuesto</button>
+        </div>
+        <div class="pbnone">Gastado: ${eur(gastado)} · sin presupuesto</div>
+      </div>`;
+    }
+    const lim=+p.limite_mes, pct=Math.round(gastado/lim*100), col=colorPct(pct);
+    return `<div class="pbrow${esSub?' sub':''}">
+      <div class="pbhead">
+        <span class="nm">${c.emoji} ${c.nombre}</span>
+        <span class="vals">${eur(gastado)} / ${eur(lim)} <b style="color:${col}">${pct}%</b></span>
+      </div>
+      <div class="pbbar"><div class="pbfill" style="width:${Math.min(pct,100)}%;background:${col}"></div></div>
+    </div>`;
+  };
+  let html='';
+  mains.forEach(c=>{ html+='<div class="pbgrp">'+fila(c,false); subsDe(c.id).forEach(s=>html+=fila(s,true)); html+='</div>'; });
+  cont.innerHTML=html;
+  cont.querySelectorAll('.pbset').forEach(b=>b.onclick=()=>abrirModalPres(+b.dataset.cat));
+}
+
+function abrirModalPres(focusCatId){
+  const mains=categorias.filter(c=>c.tipo==='gasto'&&!c.padre_id);
+  const item=(c,esSub)=>{
+    const p=presDe(c.id), val=p?(+p.limite_mes):'';
+    return `<div class="presitem${esSub?' sub':''}">
+      <label>${c.emoji} ${c.nombre}</label>
+      <input type="number" min="0" step="1" data-cat="${c.id}" value="${val}" placeholder="—">
+    </div>`;
+  };
+  let html='';
+  mains.forEach(c=>{ html+=item(c,false); subsDe(c.id).forEach(s=>html+=item(s,true)); });
+  $('preslist').innerHTML=html;
+  $('overlayPres').classList.add('open');
+  if(focusCatId){const el=$('preslist').querySelector(`input[data-cat="${focusCatId}"]`); if(el)el.focus();}
+}
+$('btnEditarPres').onclick=()=>abrirModalPres();
+$('cancelPres').onclick=()=>$('overlayPres').classList.remove('open');
+$('overlayPres').onclick=e=>{if(e.target===$('overlayPres'))$('overlayPres').classList.remove('open');};
+
+$('formPres').onsubmit=async e=>{
+  e.preventDefault();
+  const inputs=[...$('preslist').querySelectorAll('input[data-cat]')];
+  const upserts=[], borrarIds=[];
+  inputs.forEach(inp=>{
+    const catId=parseInt(inp.dataset.cat), v=parseFloat(inp.value);
+    if(v>0) upserts.push({categoria_id:catId,limite_mes:v});
+    else if(presDe(catId)) borrarIds.push(catId);
+  });
+  if(DEMO){
+    upserts.forEach(u=>{const ex=presDe(u.categoria_id); if(ex)ex.limite_mes=u.limite_mes; else presupuestos.push({id:Date.now()+Math.random(),...u});});
+    presupuestos=presupuestos.filter(p=>!borrarIds.includes(p.categoria_id));
+  }else{
+    if(upserts.length){const{error}=await supa.from('presupuestos').upsert(upserts,{onConflict:'categoria_id'}); if(error){alert('Error al guardar: '+error.message);return;}}
+    if(borrarIds.length){const{error}=await supa.from('presupuestos').delete().in('categoria_id',borrarIds); if(error){alert('Error al borrar: '+error.message);return;}}
+    const{data,error}=await supa.from('presupuestos').select('*'); if(!error)presupuestos=data;
+  }
+  $('overlayPres').classList.remove('open');
+  render();
+};
 
 /* ====== Formulario movimiento ====== */
 function renderCategoriasSelect(){

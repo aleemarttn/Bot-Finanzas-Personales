@@ -349,10 +349,10 @@ function renderChartCat(){
 
 function renderChartMes(){
   const n=rangoMeses, meses=[],hoy=new Date();
-  for(let i=n-1;i>=0;i--){const d=new Date(hoy.getFullYear(),hoy.getMonth()-i,1);meses.push(d.toISOString().slice(0,7));}
+  for(let i=n-1;i>=0;i--){const d=new Date(Date.UTC(hoy.getUTCFullYear(),hoy.getUTCMonth()-i,1));meses.push(d.toISOString().slice(0,7));}
   const ing=meses.map(m=>totalesMes(m).ing),gas=meses.map(m=>totalesMes(m).gas);
-  const lbl=meses.map(m=>{const[y,mm]=m.split('-');const d=new Date(y,mm-1,1);
-    return d.toLocaleDateString('es-ES',{month:'short'})+(n>6?" '"+String(y).slice(2):'');});
+  const lbl=meses.map(m=>{const[y,mm]=m.split('-');const d=new Date(Date.UTC(y,mm-1,1));
+    return d.toLocaleDateString('es-ES',{month:'short',timeZone:'UTC'})+(n>6?" '"+String(y).slice(2):'');});
   const ctx=$('chartMes'); if(chartMes)chartMes.destroy();
   chartMes=new Chart(ctx,{type:'bar',
     data:{labels:lbl,datasets:[

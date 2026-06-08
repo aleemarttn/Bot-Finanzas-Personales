@@ -1,0 +1,254 @@
+{
+  "name": "Finanzas · Bot Telegram (Groq)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "n1",
+      "name": "Cada 1 min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $getWorkflowStaticData('global');\nreturn [{ json: { offset: data.tg_offset || 0 } }];"
+      },
+      "id": "n2",
+      "name": "Leer offset",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        120,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.telegram.org/botPEGAR_TOKEN_DEL_BOT/getUpdates",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "offset",
+              "value": "={{ $json.offset }}"
+            },
+            {
+              "name": "timeout",
+              "value": "0"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "n3",
+      "name": "getUpdates",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        340,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $getWorkflowStaticData('global');\nconst updates = $input.first().json.result || [];\nconst out = [];\nlet maxId = data.tg_offset || 0;\n\nconst systemPrompt = \"Eres un asistente de finanzas personales. Conviertes un mensaje corto en español sobre un gasto o un ingreso en un objeto JSON.\\n\\nCategorías válidas (devuelve el \\\"categoria_id\\\" EXACTO):\\nGASTOS:\\n- 1  = Comida (genérico, si no sabes la subcategoría)\\n- 12 = Restaurante (subcategoría de Comida)\\n- 13 = Comida con Silvia (subcategoría de Comida)\\n- 14 = Comida en casa (subcategoría de Comida)\\n- 2  = Supermercado\\n- 3  = Transporte\\n- 4  = Vivienda\\n- 5  = Ocio\\n- 6  = Salud\\n- 7  = Suscripciones\\n- 8  = Compras\\n- 9  = Otros gastos\\nINGRESOS:\\n- 10 = Nómina\\n- 11 = Otros ingresos\\n\\nReglas:\\n- \\\"tipo\\\" = \\\"gasto\\\" salvo que claramente sea un ingreso (nómina, me han pagado, cobro...), entonces \\\"ingreso\\\".\\n- Elige la subcategoría más específica si encaja: \\\"cena con Silvia\\\" -> 13; \\\"comí en un restaurante\\\" -> 12; \\\"compra para cocinar en casa\\\" -> 14; \\\"la compra del súper\\\" -> 2.\\n- \\\"importe\\\" en euros, número (acepta coma o punto decimal).\\n- \\\"descripcion\\\" = resumen corto del mensaje.\\n- Si no encaja en nada, usa 9 (gasto) u 11 (ingreso).\\n\\nDevuelve SOLO el JSON, sin texto extra:\\n{\\\"importe\\\": number, \\\"tipo\\\": \\\"gasto\\\"|\\\"ingreso\\\", \\\"categoria_id\\\": number, \\\"descripcion\\\": string}\";\n\nfor (const u of updates) {\n  if (u.update_id >= maxId) maxId = u.update_id + 1;\n  const msg = u.message;\n  if (msg && msg.text) {\n    if (msg.chat.id !== 950662101) continue; // solo tu chat\n    out.push({ json: { texto: msg.text, chat_id: msg.chat.id, systemPrompt } });\n  }\n}\ndata.tg_offset = maxId;\nreturn out;"
+      },
+      "id": "n4",
+      "name": "Procesar updates",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer PEGAR_GROQ_API_KEY"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"llama-3.3-70b-versatile\",\n  \"response_format\": { \"type\": \"json_object\" },\n  \"messages\": [\n    { \"role\": \"system\", \"content\": {{ JSON.stringify($json.systemPrompt) }} },\n    { \"role\": \"user\", \"content\": {{ JSON.stringify($json.texto) }} }\n  ]\n}",
+        "options": {}
+      },
+      "id": "n5",
+      "name": "IA (Groq) parsear",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        780,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const ai = JSON.parse($json.choices[0].message.content);\nconst chat_id = $('Procesar updates').item.json.chat_id;\nreturn [{ json: {\n  importe: ai.importe,\n  tipo: ai.tipo,\n  categoria_id: ai.categoria_id,\n  descripcion: ai.descripcion || null,\n  chat_id\n}}];"
+      },
+      "id": "n6",
+      "name": "Construir registro",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1000,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://jtkhvvkfgqotvhljtybp.supabase.co/rest/v1/transacciones",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "sb_publishable_BVJ9sAnDj4tB25sVsZss8A_26cm57wL"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer sb_publishable_BVJ9sAnDj4tB25sVsZss8A_26cm57wL"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"importe\": {{ $json.importe }},\n  \"tipo\": {{ JSON.stringify($json.tipo) }},\n  \"categoria_id\": {{ $json.categoria_id }},\n  \"descripcion\": {{ JSON.stringify($json.descripcion) }},\n  \"origen\": \"telegram\"\n}",
+        "options": {}
+      },
+      "id": "n7",
+      "name": "Guardar en Supabase",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1220,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.telegram.org/botPEGAR_TOKEN_DEL_BOT/sendMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"chat_id\": {{ $('Construir registro').item.json.chat_id }},\n  \"text\": {{ JSON.stringify(\"✅ Apuntado: \" + $('Construir registro').item.json.importe + \" € (cat \" + $('Construir registro').item.json.categoria_id + \")\") }}\n}",
+        "options": {}
+      },
+      "id": "n8",
+      "name": "Confirmar en Telegram",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1440,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Cada 1 min": {
+      "main": [
+        [
+          {
+            "node": "Leer offset",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer offset": {
+      "main": [
+        [
+          {
+            "node": "getUpdates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "getUpdates": {
+      "main": [
+        [
+          {
+            "node": "Procesar updates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Procesar updates": {
+      "main": [
+        [
+          {
+            "node": "IA (Groq) parsear",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IA (Groq) parsear": {
+      "main": [
+        [
+          {
+            "node": "Construir registro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Construir registro": {
+      "main": [
+        [
+          {
+            "node": "Guardar en Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar en Supabase": {
+      "main": [
+        [
+          {
+            "node": "Confirmar en Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

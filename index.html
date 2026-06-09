@@ -80,6 +80,10 @@
   .del:hover{color:var(--red)}
   .edt{cursor:pointer;color:var(--muted);border:none;background:none;font-size:15px;margin-right:4px}
   .edt:hover{color:var(--accent)}
+  .pager{display:inline-flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+  .pager button{min-width:26px;padding:4px 7px;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-weight:600;font-size:12px;cursor:pointer}
+  .pager button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .pager button:hover{border-color:var(--accent)}
   canvas{max-height:260px}
   .empty{color:var(--muted);font-size:14px;text-align:center;padding:30px}
   footer{color:var(--muted);font-size:12px;text-align:center;margin-top:28px}
@@ -155,7 +159,7 @@
       <canvas id="chartMes"></canvas>
     </div>
     <div class="card">
-      <h2>Últimos movimientos</h2>
+      <h2><span id="movTitulo">Últimos movimientos</span><span class="pager" id="pagerMov"></span></h2>
       <div id="tablaWrap"></div>
     </div>
   </div>
@@ -271,7 +275,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_BVJ9sAnDj4tB25sVsZss8A_26cm57wL";
 let supa=null, DEMO=false, tipoSel="gasto", tipoCatSel="gasto", editId=null;
 let categorias=[], transacciones=[], presupuestos=[];
 let chartCat=null, chartMes=null;
-let catDrill=null, rangoMeses=6, tipoChart='gasto';   // drill-down del donut, rango de la evolución y tipo del donut
+let catDrill=null, rangoMeses=6, tipoChart='gasto', pagMov=1;   // drill-down del donut, rango de la evolución, tipo del donut y página de movimientos
 const eur = n => new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(n||0);
 const $ = id => document.getElementById(id);
 
@@ -434,7 +438,19 @@ function renderChartMes(){
 }
 
 function renderTabla(){
-  const ult=transacciones.slice(0,10);
+  const PS=10;
+  const totalPag=Math.max(1,Math.ceil(transacciones.length/PS));
+  if(pagMov>totalPag)pagMov=totalPag; if(pagMov<1)pagMov=1;
+  const ini=(pagMov-1)*PS;
+  const ult=transacciones.slice(ini,ini+PS);
+  $('movTitulo').textContent='Últimos movimientos · '+transacciones.length;
+  const pager=$('pagerMov');
+  if(totalPag<=1){pager.innerHTML='';}
+  else{
+    let pb=''; for(let i=1;i<=totalPag;i++) pb+=`<button data-p="${i}" class="${i===pagMov?'on':''}">${i}</button>`;
+    pager.innerHTML=pb;
+    pager.querySelectorAll('button').forEach(b=>b.onclick=()=>{pagMov=parseInt(b.dataset.p);renderTabla();});
+  }
   if(!ult.length){$('tablaWrap').innerHTML='<div class="empty">Sin movimientos todavía.</div>';return;}
   $('tablaWrap').innerHTML=`<table><thead><tr>
     <th>Fecha y hora</th><th>Categoría</th><th>Descripción</th><th style="text-align:right">Importe</th><th></th>

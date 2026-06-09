@@ -132,10 +132,16 @@
   <div class="grid" style="gap:16px">
     <div class="card">
       <h2><span id="catTitulo">Gasto por categoría · este mes</span>
-        <button class="linkbtn" id="btnVolverCat" type="button" style="display:none">← Volver</button>
+        <span style="display:flex;gap:8px;align-items:center">
+          <button class="linkbtn" id="btnVolverCat" type="button" style="display:none">← Volver</button>
+          <span class="toggle" id="segTipoCat">
+            <button type="button" data-t="gasto" class="on">Gastos</button>
+            <button type="button" data-t="ingreso">Ingresos</button>
+          </span>
+        </span>
       </h2>
       <canvas id="chartCat"></canvas>
-      <div class="hint" id="catHint">Pincha el nombre (o la porción) de una categoría con subcategorías para ver el desglose.</div>
+      <div class="hint" id="catHint" style="margin-top:18px">Pincha el nombre (o la porción) de una categoría con subcategorías para ver el desglose.</div>
     </div>
     <div class="card">
       <h2><span>Evolución</span>
@@ -247,7 +253,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_BVJ9sAnDj4tB25sVsZss8A_26cm57wL";
 let supa=null, DEMO=false, tipoSel="gasto", tipoCatSel="gasto";
 let categorias=[], transacciones=[], presupuestos=[];
 let chartCat=null, chartMes=null;
-let catDrill=null, rangoMeses=6;   // drill-down del donut y rango de la evolución
+let catDrill=null, rangoMeses=6, tipoChart='gasto';   // drill-down del donut, rango de la evolución y tipo del donut
 const eur = n => new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(n||0);
 const $ = id => document.getElementById(id);
 
@@ -362,16 +368,16 @@ function renderChartCat(){
   let ids=[],map={};
   if(catDrill==null){
     // vista general: subcategorías sumadas a su categoría raíz
-    transacciones.filter(t=>t.tipo==='gasto'&&mesDe(t.fecha)===m).forEach(t=>{
+    transacciones.filter(t=>t.tipo===tipoChart&&mesDe(t.fecha)===m).forEach(t=>{
       const r=raiz(t.categoria_id); map[r.id]=(map[r.id]||0)+ +t.importe;});
     ids=Object.keys(map).map(Number).sort((a,b)=>map[b]-map[a]);
-    $('catTitulo').textContent='Gasto por categoría · este mes';
+    $('catTitulo').textContent=(tipoChart==='gasto'?'Gasto':'Ingreso')+' por categoría · este mes';
     $('btnVolverCat').style.display='none';
     $('catHint').textContent='Pincha el nombre (o la porción) de una categoría con subcategorías para ver el desglose.';
   }else{
     // detalle: subcategorías del catDrill + lo gastado directamente en la categoría (sin subcategoría)
     const subs=subsDe(catDrill);
-    transacciones.filter(t=>t.tipo==='gasto'&&mesDe(t.fecha)===m).forEach(t=>{
+    transacciones.filter(t=>t.tipo===tipoChart&&mesDe(t.fecha)===m).forEach(t=>{
       if(t.categoria_id===catDrill) map['_self']=(map['_self']||0)+ +t.importe;
       else if(subs.some(s=>s.id===t.categoria_id)) map[t.categoria_id]=(map[t.categoria_id]||0)+ +t.importe;});
     ids=Object.keys(map).sort((a,b)=>map[b]-map[a]);
@@ -380,7 +386,7 @@ function renderChartCat(){
     $('catHint').textContent='Desglose de '+catById(catDrill).nombre+' este mes.';
   }
   const total=Object.values(map).reduce((a,b)=>a+b,0);
-  if(!total){ctx.insertAdjacentHTML('afterend','<div class="empty">No hay gastos aquí este mes.</div>');return;}
+  if(!total){ctx.insertAdjacentHTML('afterend','<div class="empty">No hay '+(tipoChart==='gasto'?'gastos':'ingresos')+' aquí este mes.</div>');return;}
   const labels=ids.map(id=> id==='_self' ? '• Sin subcategoría' : catById(+id).emoji+' '+catById(+id).nombre);
   const colors=ids.map(id=> id==='_self' ? '#64748b' : catById(+id).color);
   const data=ids.map(id=>map[id]);
@@ -580,6 +586,10 @@ $('btnVolverCat').onclick=()=>{catDrill=null;renderChartCat();};
 $('segRango').onclick=e=>{const b=e.target.closest('button');if(!b)return;
   document.querySelectorAll('#segRango button').forEach(x=>x.classList.remove('on'));
   b.classList.add('on');rangoMeses=parseInt(b.dataset.r);renderChartMes();};
+// conmutar el donut entre Gastos e Ingresos
+$('segTipoCat').onclick=e=>{const b=e.target.closest('button');if(!b)return;
+  document.querySelectorAll('#segTipoCat button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');tipoChart=b.dataset.t;catDrill=null;renderChartCat();};
 
 // fecha y hora por defecto = ahora
 (function(){const n=new Date();

@@ -166,6 +166,12 @@
 
   <div class="grid" style="gap:16px">
     <div class="card">
+      <h2>🎯 Objetivo de ahorro
+        <button class="linkbtn" id="btnEditarObj" type="button">Editar</button>
+      </h2>
+      <div id="objWrap"></div>
+    </div>
+    <div class="card">
       <h2>🧠 Recomendador</h2>
       <div class="tips" id="tips"></div>
     </div>
@@ -265,6 +271,22 @@
   </div>
 </div>
 
+<!-- Modal objetivos de ahorro -->
+<div class="overlay" id="overlayObj">
+  <div class="modal">
+    <h3>🎯 Objetivos de ahorro</h3>
+    <form id="formObj" style="gap:14px">
+      <div><label>Objetivo mensual (€)</label><input id="o_mensual" type="number" min="0" step="1" placeholder="—"></div>
+      <div><label>Objetivo acumulado total (€)</label><input id="o_acumulado" type="number" min="0" step="1" placeholder="—"></div>
+      <div class="hint">Deja en blanco (o 0) para no fijar ese objetivo.</div>
+      <div class="actions">
+        <button type="button" class="ghost" id="cancelObj">Cancelar</button>
+        <button type="submit" class="submit" style="flex:1;margin:0">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
 /* ============================================================
    CONFIGURACIÓN — pega aquí tus claves de Supabase
@@ -273,7 +295,7 @@ const SUPABASE_URL = "https://jtkhvvkfgqotvhljtybp.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_BVJ9sAnDj4tB25sVsZss8A_26cm57wL";
 
 let supa=null, DEMO=false, tipoSel="gasto", tipoCatSel="gasto", editId=null;
-let categorias=[], transacciones=[], presupuestos=[];
+let categorias=[], transacciones=[], presupuestos=[], ajustes={};
 let chartCat=null, chartMes=null;
 let catDrill=null, rangoMeses=6, tipoChart='gasto', pagMov=1;   // drill-down del donut, rango de la evolución, tipo del donut y página de movimientos
 const eur = n => new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(n||0);
@@ -329,6 +351,7 @@ function datosDemo(){
     {id:3,categoria_id:2,limite_mes:300},
     {id:4,categoria_id:5,limite_mes:100},
   ];
+  ajustes={objetivo_mensual:300,objetivo_acumulado:1000};
 }
 
 /* ====== Carga ====== */
@@ -336,13 +359,14 @@ async function cargar(){
   const ok = SUPABASE_URL.startsWith('http') && SUPABASE_ANON_KEY.length>20;
   if(ok){
     supa=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
-    const [c,t,p]=await Promise.all([
+    const [c,t,p,a]=await Promise.all([
       supa.from('categorias').select('*'),
       supa.from('transacciones').select('*').order('fecha',{ascending:false}),
-      supa.from('presupuestos').select('*')
+      supa.from('presupuestos').select('*'),
+      supa.from('ajustes').select('*')
     ]);
     if(c.error||t.error){console.error(c.error||t.error);datosDemo();}
-    else{categorias=c.data;transacciones=t.data;presupuestos=(p&&!p.error&&p.data)?p.data:[];DEMO=false;}
+    else{categorias=c.data;transacciones=t.data;presupuestos=(p&&!p.error&&p.data)?p.data:[];aplicarAjustes(a&&!a.error&&a.data?a.data:[]);DEMO=false;}
   } else datosDemo();
   pintarStatus(); render();
 }
@@ -365,7 +389,7 @@ function totalesMes(mes){
 /* ====== Render ====== */
 function render(){
   renderKPIs();renderChartCat();renderChartMes();renderTabla();
-  renderTips();renderCategoriasSelect();renderPresupuestos();
+  renderTips();renderCategoriasSelect();renderPresupuestos();renderObjetivo();
 }
 
 function renderKPIs(){
@@ -629,6 +653,43 @@ $('formEdit').onsubmit=async e=>{
     const t=transacciones.find(x=>x.id===editId);if(t)t.categoria_id=nuevaCat;}
   $('overlayEdit').classList.remove('open');
   render();
+};
+
+/* ====== Objetivo de ahorro ====== */
+function aplicarAjustes(rows){ ajustes={}; (rows||[]).forEach(r=>ajustes[r.clave]=+r.valor); }
+function renderObjetivo(){
+  const cont=$('objWrap');
+  const objM=+ajustes.objetivo_mensual||0, objA=+ajustes.objetivo_acumulado||0;
+  const ahorroMes=totalesMes(mesActual()).bal;
+  let ahorroAcum=0; transacciones.forEach(t=>ahorroAcum+=(t.tipo==='ingreso'?+t.importe:-+t.importe));
+  const bloque=(titulo,ahorro,obj)=>{
+    if(!(obj>0)) return `<div class="pbrow"><div class="pbhead"><span class="nm">${titulo}</span><span class="vals">${eur(ahorro)}</span></div><div class="pbnone">Sin objetivo · pulsa "Editar"</div></div>`;
+    const pct=Math.round(ahorro/obj*100), pctBar=Math.max(0,Math.min(pct,100));
+    const col=ahorro<0?'#ef4444':(pct>=100?'#22c55e':'#6c8cff');
+    const nota=ahorro<0?`Vas en negativo (${eur(ahorro)})`:(pct>=100?'¡Objetivo conseguido! 🎉':`Te faltan ${eur(obj-ahorro)}`);
+    return `<div class="pbrow">
+      <div class="pbhead"><span class="nm">${titulo}</span><span class="vals">${eur(ahorro)} / ${eur(obj)} <b style="color:${col}">${pct}%</b></span></div>
+      <div class="pbbar"><div class="pbfill" style="width:${pctBar}%;background:${col}"></div></div>
+      <div class="pbnone">${nota}</div>
+    </div>`;
+  };
+  cont.innerHTML='<div class="pbgrp">'+bloque('Este mes',ahorroMes,objM)+'</div>'+bloque('Acumulado total',ahorroAcum,objA);
+}
+$('btnEditarObj').onclick=()=>{
+  $('o_mensual').value=(+ajustes.objetivo_mensual>0)?+ajustes.objetivo_mensual:'';
+  $('o_acumulado').value=(+ajustes.objetivo_acumulado>0)?+ajustes.objetivo_acumulado:'';
+  $('overlayObj').classList.add('open');
+};
+$('cancelObj').onclick=()=>$('overlayObj').classList.remove('open');
+$('overlayObj').onclick=e=>{if(e.target===$('overlayObj'))$('overlayObj').classList.remove('open');};
+$('formObj').onsubmit=async e=>{
+  e.preventDefault();
+  const m=parseFloat($('o_mensual').value)||0, a=parseFloat($('o_acumulado').value)||0;
+  if(DEMO){ajustes.objetivo_mensual=m;ajustes.objetivo_acumulado=a;}
+  else{const{error}=await supa.from('ajustes').upsert([{clave:'objetivo_mensual',valor:m},{clave:'objetivo_acumulado',valor:a}],{onConflict:'clave'});
+    if(error){alert('Error al guardar: '+error.message);return;}
+    ajustes.objetivo_mensual=m;ajustes.objetivo_acumulado=a;}
+  $('overlayObj').classList.remove('open'); render();
 };
 
 /* ====== Formulario movimiento ====== */

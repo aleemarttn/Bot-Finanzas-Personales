@@ -487,7 +487,7 @@ function renderTips(){
   if(subsc&&map[subsc.id])tips.push({t:'',i:'📱',h:`Pagas <b>${eur(map[subsc.id])}</b> en suscripciones este mes. ¿Usas todas?`});
 
   // presupuestos superados este mes
-  const exced=categorias.filter(c=>c.tipo==='gasto').map(c=>{const p=presupuestos.find(x=>x.categoria_id===c.id);if(!p||!(+p.limite_mes>0))return null;const g=gastoExactoMes(c.id);return g>+p.limite_mes?{c,g,lim:+p.limite_mes}:null;}).filter(Boolean);
+  const exced=categorias.filter(c=>c.tipo==='gasto').map(c=>{const p=presupuestos.find(x=>x.categoria_id===c.id);if(!p||!(+p.limite_mes>0))return null;const g=gastoMes(c.id, !c.padre_id);return g>+p.limite_mes?{c,g,lim:+p.limite_mes}:null;}).filter(Boolean);
   if(exced.length){const e0=exced[0];tips.push({t:'warn',i:'🎯',h:`Te has pasado del presupuesto de <b>${e0.c.nombre}</b>: ${eur(e0.g)} de ${eur(e0.lim)}${exced.length>1?` (y ${exced.length-1} más)`:''}.`});}
 
   if(transacciones.filter(t=>mesDe(t.fecha)===m).length<3)
@@ -499,10 +499,13 @@ function renderTips(){
 
 /* ====== Presupuestos ====== */
 const presDe = id => presupuestos.find(p=>p.categoria_id===id);
-// gasto del mes en curso SOLO de esa categoría exacta (sin sumar subcategorías)
-function gastoExactoMes(catId){
+// gasto del mes en curso de una categoría; si incluirHijos, suma también sus subcategorías
+function gastoMes(catId, incluirHijos){
   const m=mesActual(); let s=0;
-  transacciones.forEach(t=>{ if(t.tipo==='gasto'&&t.categoria_id===catId&&mesDe(t.fecha)===m) s+=+t.importe; });
+  const hijos = incluirHijos ? subsDe(catId).map(x=>x.id) : [];
+  transacciones.forEach(t=>{
+    if(t.tipo==='gasto'&&mesDe(t.fecha)===m&&(t.categoria_id===catId||hijos.includes(t.categoria_id))) s+=+t.importe;
+  });
   return s;
 }
 const colorPct = pct => pct>100?'#ef4444':(pct>=80?'#eab308':'#22c55e');
@@ -512,7 +515,7 @@ function renderPresupuestos(){
   const mains=categorias.filter(c=>c.tipo==='gasto'&&!c.padre_id);
   if(!mains.length){cont.innerHTML='<div class="empty">No hay categorías de gasto.</div>';return;}
   const fila=(c,esSub)=>{
-    const p=presDe(c.id), gastado=gastoExactoMes(c.id);
+    const p=presDe(c.id), gastado=gastoMes(c.id, !esSub);
     if(!p||!(+p.limite_mes>0)){
       return `<div class="pbrow${esSub?' sub':''}">
         <div class="pbhead">

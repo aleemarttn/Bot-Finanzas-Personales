@@ -78,6 +78,8 @@
   .amt.g{color:var(--red)} .amt.i{color:var(--green)}
   .del{cursor:pointer;color:var(--muted);border:none;background:none;font-size:15px}
   .del:hover{color:var(--red)}
+  .edt{cursor:pointer;color:var(--muted);border:none;background:none;font-size:15px;margin-right:4px}
+  .edt:hover{color:var(--accent)}
   canvas{max-height:260px}
   .empty{color:var(--muted);font-size:14px;text-align:center;padding:30px}
   footer{color:var(--muted);font-size:12px;text-align:center;margin-top:28px}
@@ -243,6 +245,22 @@
   </div>
 </div>
 
+<!-- Modal cambiar categoría de un movimiento -->
+<div class="overlay" id="overlayEdit">
+  <div class="modal">
+    <h3>✏️ Cambiar categoría del movimiento</h3>
+    <form id="formEdit" style="gap:14px">
+      <div id="editInfo" class="hint" style="margin:0"></div>
+      <div><label>Categoría</label><select id="e_categoria"></select></div>
+      <div id="eSubWrap"><label>Subcategoría (opcional)</label><select id="e_subcategoria"></select></div>
+      <div class="actions">
+        <button type="button" class="ghost" id="cancelEdit">Cancelar</button>
+        <button type="submit" class="submit" style="flex:1;margin:0">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
 /* ============================================================
    CONFIGURACIÓN — pega aquí tus claves de Supabase
@@ -250,7 +268,7 @@
 const SUPABASE_URL = "https://jtkhvvkfgqotvhljtybp.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_BVJ9sAnDj4tB25sVsZss8A_26cm57wL";
 
-let supa=null, DEMO=false, tipoSel="gasto", tipoCatSel="gasto";
+let supa=null, DEMO=false, tipoSel="gasto", tipoCatSel="gasto", editId=null;
 let categorias=[], transacciones=[], presupuestos=[];
 let chartCat=null, chartMes=null;
 let catDrill=null, rangoMeses=6, tipoChart='gasto';   // drill-down del donut, rango de la evolución y tipo del donut
@@ -430,9 +448,10 @@ function renderTabla(){
         <td><span class="pill" style="background:${c.color}22;color:${c.color}">${c.emoji} ${nombrePath(t.categoria_id)}</span></td>
         <td>${t.descripcion||'—'}</td>
         <td class="amt ${t.tipo==='gasto'?'g':'i'}">${t.tipo==='gasto'?'-':'+'}${eur(t.importe)}</td>
-        <td><button class="del" data-id="${t.id}" title="Eliminar">🗑️</button></td>
+        <td style="white-space:nowrap"><button class="edt" data-edit="${t.id}" title="Cambiar categoría">✏️</button><button class="del" data-id="${t.id}" title="Eliminar">🗑️</button></td>
       </tr>`;}).join('')}</tbody></table>`;
   document.querySelectorAll('.del').forEach(b=>b.onclick=()=>eliminar(+b.dataset.id));
+  document.querySelectorAll('.edt').forEach(b=>b.onclick=()=>abrirEdit(+b.dataset.edit));
 }
 
 /* ====== Recomendador ====== */
@@ -555,6 +574,41 @@ $('formPres').onsubmit=async e=>{
     const{data,error}=await supa.from('presupuestos').select('*'); if(!error)presupuestos=data;
   }
   $('overlayPres').classList.remove('open');
+  render();
+};
+
+/* ====== Editar categoría de un movimiento ====== */
+function abrirEdit(id){
+  const t=transacciones.find(x=>x.id===id); if(!t)return;
+  editId=id;
+  const r=raiz(t.categoria_id);
+  $('editInfo').innerHTML=`<b>${eur(t.importe)}</b> · ${t.descripcion||'—'}<br>Actualmente en: <b>${nombrePath(t.categoria_id)}</b>`;
+  const sel=$('e_categoria');
+  sel.innerHTML=topCats(t.tipo).map(c=>`<option value="${c.id}">${c.emoji} ${c.nombre}</option>`).join('');
+  sel.value=r.id;
+  renderEditSub(esSub(catById(t.categoria_id))?t.categoria_id:'');
+  $('overlayEdit').classList.add('open');
+}
+function renderEditSub(preselect){
+  const subs=subsDe(parseInt($('e_categoria').value));
+  const wrap=$('eSubWrap'),sel=$('e_subcategoria');
+  if(!subs.length){wrap.style.display='none';sel.innerHTML='';return;}
+  wrap.style.display='block';
+  sel.innerHTML=`<option value="">— sin subcategoría —</option>`+subs.map(s=>`<option value="${s.id}">${s.emoji} ${s.nombre}</option>`).join('');
+  if(preselect)sel.value=preselect;
+}
+$('e_categoria').onchange=()=>renderEditSub('');
+$('cancelEdit').onclick=()=>$('overlayEdit').classList.remove('open');
+$('overlayEdit').onclick=e=>{if(e.target===$('overlayEdit'))$('overlayEdit').classList.remove('open');};
+$('formEdit').onsubmit=async e=>{
+  e.preventDefault();
+  const sub=$('e_subcategoria').value;
+  const nuevaCat=sub?parseInt(sub):parseInt($('e_categoria').value);
+  if(DEMO){const t=transacciones.find(x=>x.id===editId);if(t)t.categoria_id=nuevaCat;}
+  else{const{error}=await supa.from('transacciones').update({categoria_id:nuevaCat}).eq('id',editId);
+    if(error){alert('Error al actualizar: '+error.message);return;}
+    const t=transacciones.find(x=>x.id===editId);if(t)t.categoria_id=nuevaCat;}
+  $('overlayEdit').classList.remove('open');
   render();
 };
 

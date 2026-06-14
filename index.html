@@ -84,6 +84,15 @@
   .pager button{min-width:26px;padding:4px 7px;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-weight:600;font-size:12px;cursor:pointer}
   .pager button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
   .pager button:hover{border-color:var(--accent)}
+  .proxrow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+  .proxrow:last-child{border-bottom:none}
+  .proxmain{display:flex;flex-direction:column;gap:3px;min-width:0}
+  .proxnm{font-weight:600;font-size:14px}
+  .proxmeta{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .proxright{display:flex;align-items:center;gap:6px;white-space:nowrap}
+  .proxamt{font-weight:700;font-size:14px;color:var(--red)}
+  .reg{cursor:pointer;color:var(--muted);border:none;background:none;font-size:15px}
+  .reg:hover{color:var(--green)}
   canvas{max-height:260px}
   .empty{color:var(--muted);font-size:14px;text-align:center;padding:30px}
   footer{color:var(--muted);font-size:12px;text-align:center;margin-top:28px}
@@ -174,6 +183,12 @@
     <div class="card">
       <h2>🧠 Recomendador</h2>
       <div class="tips" id="tips"></div>
+    </div>
+    <div class="card">
+      <h2>📅 Próximos gastos
+        <button class="linkbtn" id="btnAddProx" type="button">+ Añadir</button>
+      </h2>
+      <div id="proxWrap"></div>
     </div>
     <div class="card">
       <h2>🎯 Presupuestos
@@ -287,6 +302,25 @@
   </div>
 </div>
 
+<!-- Modal próximo gasto -->
+<div class="overlay" id="overlayProx">
+  <div class="modal">
+    <h3>📅 Próximo gasto</h3>
+    <form id="formProx" style="gap:14px">
+      <div><label>Concepto</label><input id="px_nombre" type="text" required placeholder="Ej: Seguro del coche"></div>
+      <div class="row">
+        <div><label>Importe (€)</label><input id="px_importe" type="number" step="0.01" min="0" placeholder="0.00"></div>
+        <div><label>Fecha prevista</label><input id="px_fecha" type="date" required></div>
+      </div>
+      <div><label>Categoría (opcional)</label><select id="px_categoria"></select></div>
+      <div class="actions">
+        <button type="button" class="ghost" id="cancelProx">Cancelar</button>
+        <button type="submit" class="submit" style="flex:1;margin:0">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
 /* ============================================================
    CONFIGURACIÓN — pega aquí tus claves de Supabase
@@ -294,8 +328,8 @@
 const SUPABASE_URL = "https://jtkhvvkfgqotvhljtybp.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_BVJ9sAnDj4tB25sVsZss8A_26cm57wL";
 
-let supa=null, DEMO=false, tipoSel="gasto", tipoCatSel="gasto", editId=null;
-let categorias=[], transacciones=[], presupuestos=[], ajustes={};
+let supa=null, DEMO=false, tipoSel="gasto", tipoCatSel="gasto", editId=null, proxEditId=null;
+let categorias=[], transacciones=[], presupuestos=[], ajustes={}, proximos=[];
 let chartCat=null, chartMes=null;
 let catDrill=null, rangoMeses=6, tipoChart='gasto', pagMov=1;   // drill-down del donut, rango de la evolución, tipo del donut y página de movimientos
 const eur = n => new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(n||0);
@@ -352,6 +386,10 @@ function datosDemo(){
     {id:4,categoria_id:5,limite_mes:100},
   ];
   ajustes={objetivo_mensual:300,objetivo_acumulado:1000};
+  proximos=[
+    {id:1,nombre:'Seguro del coche',importe:320,fecha:new Date(now.getFullYear(),now.getMonth(),now.getDate()+5).toISOString().slice(0,10),categoria_id:3},
+    {id:2,nombre:'IBI vivienda',importe:180,fecha:new Date(now.getFullYear(),now.getMonth()+1,10).toISOString().slice(0,10),categoria_id:4},
+  ];
 }
 
 /* ====== Carga ====== */
@@ -359,14 +397,15 @@ async function cargar(){
   const ok = SUPABASE_URL.startsWith('http') && SUPABASE_ANON_KEY.length>20;
   if(ok){
     supa=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
-    const [c,t,p,a]=await Promise.all([
+    const [c,t,p,a,px]=await Promise.all([
       supa.from('categorias').select('*'),
       supa.from('transacciones').select('*').order('fecha',{ascending:false}),
       supa.from('presupuestos').select('*'),
-      supa.from('ajustes').select('*')
+      supa.from('ajustes').select('*'),
+      supa.from('proximos_gastos').select('*')
     ]);
     if(c.error||t.error){console.error(c.error||t.error);datosDemo();}
-    else{categorias=c.data;transacciones=t.data;presupuestos=(p&&!p.error&&p.data)?p.data:[];aplicarAjustes(a&&!a.error&&a.data?a.data:[]);DEMO=false;}
+    else{categorias=c.data;transacciones=t.data;presupuestos=(p&&!p.error&&p.data)?p.data:[];aplicarAjustes(a&&!a.error&&a.data?a.data:[]);proximos=(px&&!px.error&&px.data)?px.data:[];DEMO=false;}
   } else datosDemo();
   pintarStatus(); render();
 }
@@ -389,7 +428,7 @@ function totalesMes(mes){
 /* ====== Render ====== */
 function render(){
   renderKPIs();renderChartCat();renderChartMes();renderTabla();
-  renderTips();renderCategoriasSelect();renderPresupuestos();renderObjetivo();
+  renderTips();renderCategoriasSelect();renderPresupuestos();renderObjetivo();renderProximos();
 }
 
 function renderKPIs(){
@@ -529,6 +568,11 @@ function renderTips(){
   // presupuestos superados este mes
   const exced=categorias.filter(c=>c.tipo==='gasto').map(c=>{const p=presupuestos.find(x=>x.categoria_id===c.id);if(!p||!(+p.limite_mes>0))return null;const g=gastoMes(c.id, !c.padre_id);return g>+p.limite_mes?{c,g,lim:+p.limite_mes}:null;}).filter(Boolean);
   if(exced.length){const e0=exced[0];tips.push({t:'warn',i:'🎯',h:`Te has pasado del presupuesto de <b>${e0.c.nombre}</b>: ${eur(e0.g)} de ${eur(e0.lim)}${exced.length>1?` (y ${exced.length-1} más)`:''}.`});}
+
+  // próximos gastos en los próximos 7 días
+  const hoyP=new Date(); hoyP.setHours(0,0,0,0);
+  const prox7=proximos.map(p=>({p,d:Math.round((new Date(p.fecha+'T00:00:00')-hoyP)/86400000)})).filter(x=>x.d>=0&&x.d<=7).sort((a,b)=>a.d-b.d);
+  if(prox7.length){const x=prox7[0];tips.push({t:'warn',i:'📅',h:`Pago próximo: <b>${x.p.nombre}</b> (${eur(x.p.importe)}) ${x.d===0?'hoy':'en '+x.d+' días'}.`});}
 
   if(transacciones.filter(t=>mesDe(t.fecha)===m).length<3)
     tips.push({t:'',i:'📝',h:`Registra más movimientos para que los consejos sean precisos.`});
@@ -691,6 +735,89 @@ $('formObj').onsubmit=async e=>{
     ajustes.objetivo_mensual=m;ajustes.objetivo_acumulado=a;}
   $('overlayObj').classList.remove('open'); render();
 };
+
+/* ====== Próximos gastos ====== */
+function renderProximos(){
+  const cont=$('proxWrap');
+  if(!proximos.length){cont.innerHTML='<div class="empty">Sin próximos gastos. Añade el seguro del coche, IBI, renovaciones…</div>';return;}
+  const hoy0=new Date(); hoy0.setHours(0,0,0,0);
+  const lista=[...proximos].sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha)));
+  const total=lista.reduce((s,p)=>s+ +p.importe,0);
+  let html=`<div class="hint" style="margin:0 0 8px">Total previsto: <b>${eur(total)}</b></div>`;
+  html+=lista.map(p=>{
+    const f=new Date(p.fecha+'T00:00:00');
+    const dias=Math.round((f-hoy0)/86400000);
+    let cuando,col;
+    if(dias<0){cuando=`vencido hace ${-dias} d`;col='#ef4444';}
+    else if(dias===0){cuando='¡hoy!';col='#ef4444';}
+    else if(dias<=15){cuando=`en ${dias} días`;col='#eab308';}
+    else{cuando=`en ${dias} días`;col='var(--muted)';}
+    const c=p.categoria_id?catById(p.categoria_id):null;
+    const fStr=f.toLocaleDateString('es-ES',{day:'2-digit',month:'short'});
+    return `<div class="proxrow">
+      <div class="proxmain">
+        <span class="proxnm">${p.nombre}</span>
+        <span class="proxmeta">${c?`<span class="pill" style="background:${c.color}22;color:${c.color}">${c.emoji} ${c.nombre}</span>`:''}<span>${fStr} · <span style="color:${col}">${cuando}</span></span></span>
+      </div>
+      <div class="proxright">
+        <span class="proxamt">${eur(p.importe)}</span>
+        <button class="reg" title="Registrar como gasto" data-reg="${p.id}">✓</button>
+        <button class="edt" title="Editar" data-ed="${p.id}">✏️</button>
+        <button class="del" title="Eliminar" data-del="${p.id}">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+  cont.innerHTML=html;
+  cont.querySelectorAll('[data-reg]').forEach(b=>b.onclick=()=>registrarProx(+b.dataset.reg));
+  cont.querySelectorAll('[data-ed]').forEach(b=>b.onclick=()=>abrirProx(+b.dataset.ed));
+  cont.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>borrarProx(+b.dataset.del));
+}
+function abrirProx(id){
+  proxEditId=id||null;
+  const sel=$('px_categoria');
+  sel.innerHTML='<option value="">— sin categoría —</option>'+categorias.filter(c=>c.tipo==='gasto'&&!c.padre_id).map(c=>`<option value="${c.id}">${c.emoji} ${c.nombre}</option>`).join('');
+  if(id){const p=proximos.find(x=>x.id===id); $('px_nombre').value=p.nombre; $('px_importe').value=p.importe; $('px_fecha').value=p.fecha; sel.value=p.categoria_id||'';}
+  else{$('px_nombre').value=''; $('px_importe').value=''; $('px_fecha').value=''; sel.value='';}
+  $('overlayProx').classList.add('open');
+}
+$('btnAddProx').onclick=()=>abrirProx();
+$('cancelProx').onclick=()=>$('overlayProx').classList.remove('open');
+$('overlayProx').onclick=e=>{if(e.target===$('overlayProx'))$('overlayProx').classList.remove('open');};
+$('formProx').onsubmit=async e=>{
+  e.preventDefault();
+  const reg={nombre:$('px_nombre').value.trim(),importe:parseFloat($('px_importe').value)||0,fecha:$('px_fecha').value,categoria_id:$('px_categoria').value?parseInt($('px_categoria').value):null};
+  if(!reg.nombre||!reg.fecha){alert('Pon al menos concepto y fecha.');return;}
+  if(DEMO){
+    if(proxEditId){Object.assign(proximos.find(x=>x.id===proxEditId),reg);}
+    else{reg.id=Date.now();proximos.push(reg);}
+  }else{
+    if(proxEditId){const{error}=await supa.from('proximos_gastos').update(reg).eq('id',proxEditId);if(error){alert('Error: '+error.message);return;}Object.assign(proximos.find(x=>x.id===proxEditId),reg);}
+    else{const{data,error}=await supa.from('proximos_gastos').insert(reg).select().single();if(error){alert('Error: '+error.message);return;}proximos.push(data);}
+  }
+  $('overlayProx').classList.remove('open'); render();
+};
+async function registrarProx(id){
+  const p=proximos.find(x=>x.id===id); if(!p)return;
+  if(!(+p.importe>0)){alert('Ponle un importe (>0) al próximo gasto antes de registrarlo.');return;}
+  if(!confirm(`¿Registrar "${p.nombre}" como gasto de ${eur(p.importe)} con fecha de hoy?`))return;
+  const nueva={fecha:new Date().toISOString(),importe:+p.importe,tipo:'gasto',categoria_id:p.categoria_id||9,descripcion:p.nombre,origen:'manual'};
+  if(DEMO){nueva.id=Date.now();transacciones.unshift(nueva);proximos=proximos.filter(x=>x.id!==id);}
+  else{
+    const{data,error}=await supa.from('transacciones').insert(nueva).select().single();
+    if(error){alert('Error al crear el gasto: '+error.message);return;}
+    transacciones.unshift(data);
+    const{error:e2}=await supa.from('proximos_gastos').delete().eq('id',id);
+    if(e2){alert('Gasto creado, pero no pude quitar el previsto: '+e2.message);}
+    proximos=proximos.filter(x=>x.id!==id);
+  }
+  render();
+}
+async function borrarProx(id){
+  if(!confirm('¿Eliminar este próximo gasto?'))return;
+  if(DEMO){proximos=proximos.filter(x=>x.id!==id);}
+  else{const{error}=await supa.from('proximos_gastos').delete().eq('id',id);if(error){alert('Error: '+error.message);return;}proximos=proximos.filter(x=>x.id!==id);}
+  render();
+}
 
 /* ====== Formulario movimiento ====== */
 function renderCategoriasSelect(){

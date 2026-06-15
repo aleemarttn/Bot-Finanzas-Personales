@@ -5,23 +5,23 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mis Finanzas · Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
-    --bg:#0f1117; --card:#181b24; --card2:#1f2330; --border:#2a2f3d;
-    --text:#e8eaf0; --muted:#9aa3b2; --accent:#6c8cff; --green:#22c55e;
-    --red:#ef4444; --amber:#eab308; --radius:16px;
+    --bg:#fbf7f1; --card:#ffffff; --card2:#f5eee3; --border:#efe6d9;
+    --text:#241f1a; --muted:#857667; --accent:#f4612e; --green:#13a05c;
+    --red:#f4612e; --amber:#f5a623; --radius:16px;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);
-       padding:24px;max-width:1200px;margin:0 auto;line-height:1.5}
-  h1{font-size:26px;font-weight:800;letter-spacing:-.5px}
-  h2{font-size:16px;font-weight:700;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+       padding:34px 26px;max-width:1160px;margin:0 auto;line-height:1.55}
+  h1{font-size:28px;font-weight:800;letter-spacing:-.8px;font-family:'Plus Jakarta Sans','Inter',sans-serif}
+  h2{font-size:16px;font-weight:700;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;font-family:'Plus Jakarta Sans','Inter',sans-serif}
   .sub{color:var(--muted);font-size:14px;margin-top:2px}
-  header{display:flex;justify-content:space-between;align-items:flex-start;
-         flex-wrap:wrap;gap:12px;margin-bottom:22px}
+  header{display:flex;justify-content:space-between;align-items:flex-end;
+         flex-wrap:wrap;gap:12px;margin-bottom:24px;border-bottom:1px solid var(--border);padding-bottom:20px}
   .badge{font-size:12px;font-weight:600;padding:6px 12px;border-radius:20px;
          border:1px solid var(--border);color:var(--muted)}
   .badge.live{color:var(--green);border-color:var(--green)}
@@ -38,6 +38,14 @@
   .kpi .value{font-size:28px;font-weight:800;margin-top:6px;letter-spacing:-1px}
   .kpi .value.green{color:var(--green)} .kpi .value.red{color:var(--red)}
   .kpi .delta{font-size:12px;color:var(--muted);margin-top:4px}
+  .hero{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:22px}
+  .heromain .herolbl{color:var(--muted);font-size:14px;font-weight:500}
+  .herobig{font-size:44px;font-weight:800;letter-spacing:-2px;margin-top:4px;font-variant-numeric:tabular-nums;font-family:'Plus Jakarta Sans',Inter,sans-serif}
+  .herobig.green{color:var(--green)} .herobig.red{color:var(--red)}
+  .heromini{display:flex;gap:30px;flex-wrap:wrap}
+  .heromini .lbl{font-size:13px;color:var(--muted)}
+  .heromini .v{font-size:22px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
+  .heromini .v.green{color:var(--green)} .heromini .v.red{color:var(--red)}
 
   .tips{display:flex;flex-direction:column;gap:10px}
   .tip{display:flex;gap:12px;padding:12px 14px;border-radius:12px;
@@ -244,7 +252,7 @@
       </div>
       <div class="row">
         <div><label>Emoji</label><input id="c_emoji" type="text" maxlength="2" value="🏷️"></div>
-        <div><label>Color</label><div class="swatch"><input id="c_color" type="color" value="#6c8cff"></div></div>
+        <div><label>Color</label><div class="swatch"><input id="c_color" type="color" value="#f4612e"></div></div>
       </div>
       <div class="actions">
         <button type="button" class="ghost" id="cancelCat">Cancelar</button>
@@ -433,16 +441,17 @@ function render(){
 function renderKPIs(){
   const cur=totalesMes(mesActual());
   const tasa=cur.ing>0?Math.round(cur.bal/cur.ing*100):0;
-  const kpis=[
-    {label:'Ingresos del mes',value:eur(cur.ing),cls:'green'},
-    {label:'Gastos del mes',value:eur(cur.gas),cls:'red'},
-    {label:'Balance',value:eur(cur.bal),cls:cur.bal>=0?'green':'red'},
-    {label:'Tasa de ahorro',value:tasa+'%',cls:tasa>=0?'green':'red',delta:cur.ing>0?'sobre tus ingresos':'sin ingresos aún'},
-  ];
-  $('kpis').innerHTML=kpis.map(k=>`<div class="card kpi">
-    <div class="label">${k.label}</div>
-    <div class="value ${k.cls||''}">${k.value}</div>
-    ${k.delta?`<div class="delta">${k.delta}</div>`:''}</div>`).join('');
+  $('kpis').innerHTML=`<div class="card hero">
+    <div class="heromain">
+      <div class="herolbl">Balance del mes</div>
+      <div class="herobig ${cur.bal>=0?'green':'red'}">${eur(cur.bal)}</div>
+    </div>
+    <div class="heromini">
+      <div><div class="lbl">Ingresos</div><div class="v green">${eur(cur.ing)}</div></div>
+      <div><div class="lbl">Gastos</div><div class="v red">${eur(cur.gas)}</div></div>
+      <div><div class="lbl">Tasa de ahorro</div><div class="v ${tasa>=0?'green':'red'}">${tasa}%</div></div>
+    </div>
+  </div>`;
 }
 
 function renderChartCat(){
@@ -480,7 +489,7 @@ function renderChartCat(){
     options:{cutout:'62%',
       onClick:(e,els)=>{ if(els.length) drill(els[0].index); },
       plugins:{legend:{position:'right',
-        labels:{color:'#9aa3b2',boxWidth:12,font:{size:11}},
+        labels:{color:'#857667',boxWidth:12,font:{size:11}},
         onClick:(e,item)=>drill(item.index)}}}});
 }
 
@@ -495,8 +504,8 @@ function renderChartMes(){
     data:{labels:lbl,datasets:[
       {label:'Ingresos',data:ing,backgroundColor:'#22c55e',borderRadius:6},
       {label:'Gastos',data:gas,backgroundColor:'#ef4444',borderRadius:6}]},
-    options:{plugins:{legend:{labels:{color:'#9aa3b2',boxWidth:12,font:{size:11}}}},
-      scales:{x:{ticks:{color:'#9aa3b2'},grid:{display:false}},y:{ticks:{color:'#9aa3b2'},grid:{color:'#2a2f3d'}}}}});
+    options:{plugins:{legend:{labels:{color:'#857667',boxWidth:12,font:{size:11}}}},
+      scales:{x:{ticks:{color:'#857667'},grid:{display:false}},y:{ticks:{color:'#857667'},grid:{color:'#efe6d9'}}}}});
 }
 
 function renderTabla(){
@@ -591,7 +600,7 @@ function gastoMes(catId, incluirHijos){
   });
   return s;
 }
-const colorPct = pct => pct>100?'#ef4444':(pct>=80?'#eab308':'#22c55e');
+const colorPct = pct => pct>100?'#e5443f':(pct>=80?'#f5a623':'#13a05c');
 
 function renderPresupuestos(){
   const cont=$('presWrap');
@@ -708,7 +717,7 @@ function renderObjetivo(){
   const bloque=(titulo,ahorro,obj)=>{
     if(!(obj>0)) return `<div class="pbrow"><div class="pbhead"><span class="nm">${titulo}</span><span class="vals">${eur(ahorro)}</span></div><div class="pbnone">Sin objetivo · pulsa "Editar"</div></div>`;
     const pct=Math.round(ahorro/obj*100), pctBar=Math.max(0,Math.min(pct,100));
-    const col=ahorro<0?'#ef4444':(pct>=100?'#22c55e':'#6c8cff');
+    const col=ahorro<0?'#e5443f':(pct>=100?'#13a05c':'#f4612e');
     const nota=ahorro<0?`Vas en negativo (${eur(ahorro)})`:(pct>=100?'¡Objetivo conseguido! 🎉':`Te faltan ${eur(obj-ahorro)}`);
     return `<div class="pbrow">
       <div class="pbhead"><span class="nm">${titulo}</span><span class="vals">${eur(ahorro)} / ${eur(obj)} <b style="color:${col}">${pct}%</b></span></div>
@@ -747,9 +756,9 @@ function renderProximos(){
     const f=new Date(p.fecha+'T00:00:00');
     const dias=Math.round((f-hoy0)/86400000);
     let cuando,col;
-    if(dias<0){cuando=`vencido hace ${-dias} d`;col='#ef4444';}
-    else if(dias===0){cuando='¡hoy!';col='#ef4444';}
-    else if(dias<=15){cuando=`en ${dias} días`;col='#eab308';}
+    if(dias<0){cuando=`vencido hace ${-dias} d`;col='#e5443f';}
+    else if(dias===0){cuando='¡hoy!';col='#e5443f';}
+    else if(dias<=15){cuando=`en ${dias} días`;col='#f5a623';}
     else{cuando=`en ${dias} días`;col='var(--muted)';}
     const c=p.categoria_id?catById(p.categoria_id):null;
     const fStr=f.toLocaleDateString('es-ES',{day:'2-digit',month:'short'});
@@ -903,7 +912,7 @@ $('formCat').onsubmit=async e=>{
   else{const{data,error}=await supa.from('categorias').insert(nueva).select().single();
     if(error){alert('Error (¿nombre repetido?): '+error.message);return;}categorias.push(data);}
   $('overlay').classList.remove('open');$('formCat').reset();
-  $('c_emoji').value='🏷️';$('c_color').value='#6c8cff';tipoCatSel='gasto';
+  $('c_emoji').value='🏷️';$('c_color').value='#f4612e';tipoCatSel='gasto';
   document.querySelectorAll('#segCat button').forEach((x,i)=>x.classList.toggle('on',i===0));
   renderCategoriasSelect();
 };

@@ -38,6 +38,11 @@
   .card.ahorro{background:#dde2e7;border-color:#c8cfd6}
   .card.ahorro .pbbar{background:#ccd2d9}
   .card.ahorro .proxrow{border-color:#c8cfd6}
+  .mesnav{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+  .navbtn{width:32px;height:32px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:17px;line-height:1;cursor:pointer;box-shadow:var(--shadow)}
+  .navbtn:hover{border-color:var(--accent)}
+  .navbtn:disabled{opacity:.4;cursor:default;box-shadow:none}
+  #mesLabel{font-weight:700;font-size:16px;min-width:150px;text-align:center;text-transform:capitalize;font-family:'Plus Jakarta Sans',sans-serif}
   .kpi .label{color:var(--muted);font-size:13px;font-weight:500}
   .kpi .value{font-size:28px;font-weight:800;margin-top:6px;letter-spacing:-1px}
   .kpi .value.green{color:var(--green)} .kpi .value.red{color:var(--red)}
@@ -152,6 +157,13 @@
   </div>
   <div class="badge" id="status">Conectando…</div>
 </header>
+
+<div class="mesnav">
+  <button id="mesPrev" class="navbtn" type="button" title="Mes anterior">‹</button>
+  <span id="mesLabel">—</span>
+  <button id="mesNext" class="navbtn" type="button" title="Mes siguiente">›</button>
+  <button id="mesHoy" class="linkbtn" type="button" style="display:none">Volver al mes actual</button>
+</div>
 
 <div class="grid kpis" id="kpis"></div>
 
@@ -429,6 +441,18 @@ function pintarStatus(){
 /* ====== Cálculos ====== */
 const mesDe=f=>f.slice(0,7);
 const mesActual=()=>new Date().toISOString().slice(0,7);
+let mesSel=mesActual();
+function shiftMes(mes,delta){const[y,m]=mes.split('-').map(Number);return new Date(Date.UTC(y,m-1+delta,1)).toISOString().slice(0,7);}
+function nombreMes(mes){const[y,m]=mes.split('-').map(Number);return new Date(Date.UTC(y,m-1,1)).toLocaleDateString('es-ES',{month:'long',year:'numeric',timeZone:'UTC'});}
+function renderNav(){
+  $('mesLabel').textContent=nombreMes(mesSel);
+  const esActual=mesSel===mesActual();
+  $('mesNext').disabled=esActual;
+  $('mesHoy').style.display=esActual?'none':'inline-block';
+}
+$('mesPrev').onclick=()=>{mesSel=shiftMes(mesSel,-1);pagMov=1;render();};
+$('mesNext').onclick=()=>{if(mesSel<mesActual()){mesSel=shiftMes(mesSel,1);pagMov=1;render();}};
+$('mesHoy').onclick=()=>{mesSel=mesActual();pagMov=1;render();};
 function totalesMes(mes){
   let ing=0,gas=0;
   transacciones.filter(t=>mesDe(t.fecha)===mes).forEach(t=>{
@@ -438,12 +462,12 @@ function totalesMes(mes){
 
 /* ====== Render ====== */
 function render(){
-  renderKPIs();renderChartCat();renderChartMes();renderTabla();
+  renderNav();renderKPIs();renderChartCat();renderChartMes();renderTabla();
   renderTips();renderCategoriasSelect();renderPresupuestos();renderObjetivo();renderProximos();
 }
 
 function renderKPIs(){
-  const cur=totalesMes(mesActual());
+  const cur=totalesMes(mesSel);
   const tasa=cur.ing>0?Math.round(cur.bal/cur.ing*100):0;
   $('kpis').innerHTML=`<div class="card hero">
     <div class="heromain">
@@ -459,7 +483,7 @@ function renderKPIs(){
 }
 
 function renderChartCat(){
-  const m=mesActual();
+  const m=mesSel;
   const ctx=$('chartCat'); ctx.parentElement.querySelector('.empty')?.remove();
   if(chartCat)chartCat.destroy();
   let ids=[],map={};
@@ -468,7 +492,7 @@ function renderChartCat(){
     transacciones.filter(t=>t.tipo===tipoChart&&mesDe(t.fecha)===m).forEach(t=>{
       const r=raiz(t.categoria_id); map[r.id]=(map[r.id]||0)+ +t.importe;});
     ids=Object.keys(map).map(Number).sort((a,b)=>map[b]-map[a]);
-    $('catTitulo').textContent=(tipoChart==='gasto'?'Gasto':'Ingreso')+' por categoría · este mes';
+    $('catTitulo').textContent=(tipoChart==='gasto'?'Gasto':'Ingreso')+' por categoría · '+nombreMes(mesSel);
     $('btnVolverCat').style.display='none';
     $('catHint').textContent='Pincha el nombre (o la porción) de una categoría con subcategorías para ver el desglose.';
   }else{
@@ -514,11 +538,12 @@ function renderChartMes(){
 
 function renderTabla(){
   const PS=10;
-  const totalPag=Math.max(1,Math.ceil(transacciones.length/PS));
+  const delMes=transacciones.filter(t=>mesDe(t.fecha)===mesSel);
+  const totalPag=Math.max(1,Math.ceil(delMes.length/PS));
   if(pagMov>totalPag)pagMov=totalPag; if(pagMov<1)pagMov=1;
   const ini=(pagMov-1)*PS;
-  const ult=transacciones.slice(ini,ini+PS);
-  $('movTitulo').textContent='Últimos movimientos · '+transacciones.length;
+  const ult=delMes.slice(ini,ini+PS);
+  $('movTitulo').textContent='Movimientos · '+delMes.length;
   const pager=$('pagerMov');
   if(totalPag<=1){pager.innerHTML='';}
   else{
@@ -547,9 +572,9 @@ function renderTabla(){
 
 /* ====== Recomendador ====== */
 function renderTips(){
-  const tips=[],m=mesActual(),cur=totalesMes(m);
-  const prev=[],hoy=new Date();
-  for(let i=1;i<=3;i++){const d=new Date(hoy.getFullYear(),hoy.getMonth()-i,1);prev.push(totalesMes(d.toISOString().slice(0,7)).gas);}
+  const tips=[],m=mesSel,cur=totalesMes(m);
+  const prev=[];
+  for(let i=1;i<=3;i++){prev.push(totalesMes(shiftMes(m,-i)).gas);}
   const va=prev.filter(x=>x>0); const media=va.length?va.reduce((a,b)=>a+b,0)/va.length:0;
 
   if(cur.bal<0)tips.push({t:'warn',i:'⚠️',h:`Este mes gastas más de lo que ingresas: <b>${eur(Math.abs(cur.bal))}</b> en negativo.`});
@@ -584,7 +609,7 @@ function renderTips(){
   // próximos gastos en los próximos 7 días
   const hoyP=new Date(); hoyP.setHours(0,0,0,0);
   const prox7=proximos.map(p=>({p,d:Math.round((new Date(p.fecha+'T00:00:00')-hoyP)/86400000)})).filter(x=>x.d>=0&&x.d<=7).sort((a,b)=>a.d-b.d);
-  if(prox7.length){const x=prox7[0];tips.push({t:'warn',i:'📅',h:`Pago próximo: <b>${x.p.nombre}</b> (${eur(x.p.importe)}) ${x.d===0?'hoy':'en '+x.d+' días'}.`});}
+  if(prox7.length&&mesSel===mesActual()){const x=prox7[0];tips.push({t:'warn',i:'📅',h:`Pago próximo: <b>${x.p.nombre}</b> (${eur(x.p.importe)}) ${x.d===0?'hoy':'en '+x.d+' días'}.`});}
 
   if(transacciones.filter(t=>mesDe(t.fecha)===m).length<3)
     tips.push({t:'',i:'📝',h:`Registra más movimientos para que los consejos sean precisos.`});
@@ -597,7 +622,7 @@ function renderTips(){
 const presDe = id => presupuestos.find(p=>p.categoria_id===id);
 // gasto del mes en curso de una categoría; si incluirHijos, suma también sus subcategorías
 function gastoMes(catId, incluirHijos){
-  const m=mesActual(); let s=0;
+  const m=mesSel; let s=0;
   const hijos = incluirHijos ? subsDe(catId).map(x=>x.id) : [];
   transacciones.forEach(t=>{
     if(t.tipo==='gasto'&&mesDe(t.fecha)===m&&(t.categoria_id===catId||hijos.includes(t.categoria_id))) s+=+t.importe;
@@ -716,7 +741,7 @@ function aplicarAjustes(rows){ ajustes={}; (rows||[]).forEach(r=>ajustes[r.clave
 function renderObjetivo(){
   const cont=$('objWrap');
   const objM=+ajustes.objetivo_mensual||0, objA=+ajustes.objetivo_acumulado||0;
-  const ahorroMes=totalesMes(mesActual()).bal;
+  const ahorroMes=totalesMes(mesSel).bal;
   let ahorroAcum=0; transacciones.forEach(t=>ahorroAcum+=(t.tipo==='ingreso'?+t.importe:-+t.importe));
   const bloque=(titulo,ahorro,obj)=>{
     if(!(obj>0)) return `<div class="pbrow"><div class="pbhead"><span class="nm">${titulo}</span><span class="vals">${eur(ahorro)}</span></div><div class="pbnone">Sin objetivo · pulsa "Editar"</div></div>`;
@@ -729,7 +754,7 @@ function renderObjetivo(){
       <div class="pbnone">${nota}</div>
     </div>`;
   };
-  cont.innerHTML='<div class="pbgrp">'+bloque('Este mes',ahorroMes,objM)+'</div>'+bloque('Acumulado total',ahorroAcum,objA);
+  cont.innerHTML='<div class="pbgrp">'+bloque(mesSel===mesActual()?'Este mes':nombreMes(mesSel),ahorroMes,objM)+'</div>'+bloque('Acumulado total',ahorroAcum,objA);
 }
 $('btnEditarObj').onclick=()=>{
   $('o_mensual').value=(+ajustes.objetivo_mensual>0)?+ajustes.objetivo_mensual:'';

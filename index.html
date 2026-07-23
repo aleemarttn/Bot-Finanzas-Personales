@@ -118,6 +118,33 @@
   .proxamt{font-weight:700;font-size:14px;color:var(--red)}
   .reg{cursor:pointer;color:var(--muted);border:none;background:none;font-size:15px}
   .reg:hover{color:var(--green)}
+
+  /* Próximas compras */
+  .card.compras{background:#e7e2ef;border-color:#d3ccdf}
+  .card.compras .pbbar{background:#d6cfe2}
+  .cmpstats{display:flex;gap:16px;flex-wrap:wrap;padding:10px 12px;border-radius:12px;
+        background:rgba(255,255,255,.55);margin-bottom:12px}
+  .cmpstats .st{min-width:0}
+  .cmpstats .lbl{font-size:11px;color:var(--muted);font-weight:500}
+  .cmpstats .val{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.3px}
+  .cmprow{padding:12px 0;border-bottom:1px solid #d3ccdf}
+  .cmprow:last-child{border-bottom:none}
+  .cmphead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:6px}
+  .cmpnm{font-weight:600;font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cmpnm .pos{color:var(--muted);font-weight:700;font-size:12px;margin-right:4px}
+  .cmpprice{font-weight:700;font-size:14px;white-space:nowrap}
+  .cmpmeta{display:flex;justify-content:space-between;gap:8px;font-size:11.5px;color:var(--muted);margin-top:5px}
+  .cmpeta{font-size:12.5px;font-weight:600;margin-top:5px}
+  .cmpnote{font-size:11.5px;color:var(--muted);margin-top:3px}
+  .cmpacts{display:flex;align-items:center;gap:4px;margin-top:8px}
+  .cmpacts .sep{flex:1}
+  .apbtn{background:rgba(255,255,255,.7);border:1px solid #cfc6dd;color:var(--text);
+        font-size:11.5px;font-weight:600;padding:4px 9px;border-radius:8px;cursor:pointer}
+  .apbtn:hover{border-color:var(--accent);color:var(--accent)}
+  .ordbtn{width:22px;height:22px;line-height:1;padding:0;border-radius:6px;border:1px solid #cfc6dd;
+        background:rgba(255,255,255,.7);color:var(--muted);font-size:11px;cursor:pointer}
+  .ordbtn:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+  .ordbtn:disabled{opacity:.3;cursor:default}
   canvas{max-height:260px}
   .empty{color:var(--muted);font-size:14px;text-align:center;padding:30px}
   footer{color:var(--muted);font-size:12px;text-align:center;margin-top:28px}
@@ -216,6 +243,12 @@
         <button class="linkbtn" id="btnAddProx" type="button">+ Añadir</button>
       </h2>
       <div id="proxWrap"></div>
+    </div>
+    <div class="card compras">
+      <h2>🛒 Próximas compras
+        <button class="linkbtn" id="btnAddCompra" type="button">+ Añadir</button>
+      </h2>
+      <div id="comprasWrap"></div>
     </div>
     <div class="card">
       <h2>🧠 Recomendador</h2>
@@ -325,6 +358,11 @@
       <div><label>Objetivo mensual (€)</label><input id="o_mensual" type="number" min="0" step="1" placeholder="—"></div>
       <div><label>Objetivo acumulado total (€)</label><input id="o_acumulado" type="number" min="0" step="1" placeholder="—"></div>
       <div class="hint">Deja en blanco (o 0) para no fijar ese objetivo.</div>
+      <div style="border-top:1px solid var(--border);margin:4px 0"></div>
+      <div><label>Saldo inicial (€)</label><input id="o_saldo" type="number" step="0.01" placeholder="0"></div>
+      <div class="hint">Lo que tenías ahorrado el día que empezaste a registrar movimientos aquí.
+        Sin esto, el acumulado y el colchón de “próximas compras” solo cuentan desde tu primer apunte
+        y salen mucho más bajos de lo real. Admite negativo si empezaste con deudas.</div>
       <div class="actions">
         <button type="button" class="ghost" id="cancelObj">Cancelar</button>
         <button type="submit" class="submit" style="flex:1;margin:0">Guardar</button>
@@ -352,6 +390,48 @@
   </div>
 </div>
 
+<!-- Modal próxima compra -->
+<div class="overlay" id="overlayCompra">
+  <div class="modal">
+    <h3>🛒 Próxima compra</h3>
+    <form id="formCompra" style="gap:14px">
+      <div class="row" style="grid-template-columns:70px 1fr">
+        <div><label>Icono</label><input id="cm_emoji" type="text" maxlength="2" value="🛍️"></div>
+        <div><label>¿Qué quieres comprar?</label><input id="cm_nombre" type="text" required placeholder="Ej: PS5 Pro"></div>
+      </div>
+      <div class="row">
+        <div><label>Precio (€)</label><input id="cm_precio" type="number" step="0.01" min="0" required placeholder="0.00"></div>
+        <div><label>Ya apartado (€)</label><input id="cm_ahorrado" type="number" step="0.01" min="0" placeholder="0"></div>
+      </div>
+      <div class="row">
+        <div><label>Lo quiero para… (opcional)</label><input id="cm_fecha" type="date"></div>
+        <div><label>Categoría (opcional)</label><select id="cm_categoria"></select></div>
+      </div>
+      <div class="hint">La categoría se usa al marcarlo como comprado, para que el gasto caiga donde toca.</div>
+      <div class="actions">
+        <button type="button" class="ghost" id="cancelCompra">Cancelar</button>
+        <button type="submit" class="submit" style="flex:1;margin:0">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal apartar dinero -->
+<div class="overlay" id="overlayApartar">
+  <div class="modal" style="max-width:360px">
+    <h3>💰 Apartar dinero</h3>
+    <form id="formApartar" style="gap:14px">
+      <div id="apInfo" class="hint" style="margin:0"></div>
+      <div><label>Cantidad (€)</label><input id="ap_importe" type="number" step="0.01" placeholder="0.00" required></div>
+      <div class="hint">Usa un número negativo para devolver dinero al colchón.</div>
+      <div class="actions">
+        <button type="button" class="ghost" id="cancelApartar">Cancelar</button>
+        <button type="submit" class="submit" style="flex:1;margin:0">Apartar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
 /* ============================================================
    CONFIGURACIÓN — pega aquí tus claves de Supabase
@@ -360,7 +440,8 @@ const SUPABASE_URL = "https://jtkhvvkfgqotvhljtybp.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_BVJ9sAnDj4tB25sVsZss8A_26cm57wL";
 
 let supa=null, DEMO=false, tipoSel="gasto", tipoCatSel="gasto", editId=null, proxEditId=null;
-let categorias=[], transacciones=[], presupuestos=[], ajustes={}, proximos=[];
+let compraEditId=null, apartarId=null;
+let categorias=[], transacciones=[], presupuestos=[], ajustes={}, proximos=[], compras=[];
 let chartCat=null, chartMes=null;
 let catDrill=null, rangoMeses=6, tipoChart='gasto', pagMov=1;   // drill-down del donut, rango de la evolución, tipo del donut y página de movimientos
 const eur = n => new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(n||0);
@@ -416,10 +497,16 @@ function datosDemo(){
     {id:3,categoria_id:2,limite_mes:300},
     {id:4,categoria_id:5,limite_mes:100},
   ];
-  ajustes={objetivo_mensual:300,objetivo_acumulado:1000};
+  ajustes={objetivo_mensual:300,objetivo_acumulado:1000,saldo_inicial:2500};
   proximos=[
     {id:1,nombre:'Seguro del coche',importe:320,fecha:new Date(now.getFullYear(),now.getMonth(),now.getDate()+5).toISOString().slice(0,10),categoria_id:3},
     {id:2,nombre:'IBI vivienda',importe:180,fecha:new Date(now.getFullYear(),now.getMonth()+1,10).toISOString().slice(0,10),categoria_id:4},
+  ];
+  compras=[
+    {id:1,nombre:'Auriculares Sony',precio:280,ahorrado:195,orden:0,categoria_id:8,fecha_objetivo:null,emoji:'🎧'},
+    {id:2,nombre:'PS5 Pro',precio:800,ahorrado:240,orden:1,categoria_id:5,fecha_objetivo:null,emoji:'🎮'},
+    {id:3,nombre:'Viaje a Japón',precio:2400,ahorrado:300,orden:2,categoria_id:5,
+     fecha_objetivo:new Date(now.getFullYear()+1,3,1).toISOString().slice(0,10),emoji:'✈️'},
   ];
 }
 
@@ -428,15 +515,16 @@ async function cargar(){
   const ok = SUPABASE_URL.startsWith('http') && SUPABASE_ANON_KEY.length>20;
   if(ok){
     supa=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
-    const [c,t,p,a,px]=await Promise.all([
+    const [c,t,p,a,px,cd]=await Promise.all([
       supa.from('categorias').select('*'),
       supa.from('transacciones').select('*').order('fecha',{ascending:false}),
       supa.from('presupuestos').select('*'),
       supa.from('ajustes').select('*'),
-      supa.from('proximos_gastos').select('*')
+      supa.from('proximos_gastos').select('*'),
+      supa.from('compras_deseadas').select('*').order('orden')
     ]);
     if(c.error||t.error){console.error(c.error||t.error);datosDemo();}
-    else{categorias=c.data;transacciones=t.data;presupuestos=(p&&!p.error&&p.data)?p.data:[];aplicarAjustes(a&&!a.error&&a.data?a.data:[]);proximos=(px&&!px.error&&px.data)?px.data:[];DEMO=false;}
+    else{categorias=c.data;transacciones=t.data;presupuestos=(p&&!p.error&&p.data)?p.data:[];aplicarAjustes(a&&!a.error&&a.data?a.data:[]);proximos=(px&&!px.error&&px.data)?px.data:[];compras=(cd&&!cd.error&&cd.data)?cd.data:[];DEMO=false;}
   } else datosDemo();
   pintarStatus(); render();
 }
@@ -471,7 +559,7 @@ function totalesMes(mes){
 /* ====== Render ====== */
 function render(){
   renderNav();renderKPIs();renderChartCat();renderChartMes();renderTabla();
-  renderTips();renderCategoriasSelect();renderPresupuestos();renderObjetivo();renderProximos();
+  renderTips();renderCategoriasSelect();renderPresupuestos();renderObjetivo();renderProximos();renderCompras();
 }
 
 function renderKPIs(){
@@ -619,6 +707,17 @@ function renderTips(){
   const prox7=proximos.map(p=>({p,d:Math.round((new Date(p.fecha+'T00:00:00')-hoyP)/86400000)})).filter(x=>x.d>=0&&x.d<=7).sort((a,b)=>a.d-b.d);
   if(prox7.length&&mesSel===mesActual()){const x=prox7[0];tips.push({t:'warn',i:'📅',h:`Pago próximo: <b>${x.p.nombre}</b> (${eur(x.p.importe)}) ${x.d===0?'hoy':'en '+x.d+' días'}.`});}
 
+  // próxima compra de la cola
+  if(compras.length&&mesSel===mesActual()){
+    const primera=colaCompras()[0];
+    if(primera.falta<=0||primera.meses===0)
+      tips.push({t:'good',i:primera.c.emoji||'🛒',h:`Ya te puedes permitir <b>${primera.c.nombre}</b> (${eur(primera.c.precio)}). ¿Te lo compras?`});
+    else if(primera.meses!==null)
+      tips.push({t:'',i:primera.c.emoji||'🛒',h:`Para <b>${primera.c.nombre}</b> te faltan ${eur(primera.falta)}: a tu ritmo, ~${primera.meses} ${primera.meses===1?'mes':'meses'}.`});
+    else
+      tips.push({t:'warn',i:'🛒',h:`No ahorras de media, así que <b>${primera.c.nombre}</b> no avanza. Recorta gasto o aparta dinero a mano.`});
+  }
+
   if(transacciones.filter(t=>mesDe(t.fecha)===m).length<3)
     tips.push({t:'',i:'📝',h:`Registra más movimientos para que los consejos sean precisos.`});
   if(!tips.length)tips.push({t:'good',i:'👌',h:'Todo en orden por ahora.'});
@@ -750,7 +849,7 @@ function renderObjetivo(){
   const cont=$('objWrap');
   const objM=+ajustes.objetivo_mensual||0, objA=+ajustes.objetivo_acumulado||0;
   const ahorroMes=totalesMes(mesSel).bal;
-  let ahorroAcum=0; transacciones.forEach(t=>ahorroAcum+=(t.tipo==='ingreso'?+t.importe:-+t.importe));
+  const ahorroAcum=ahorroAcumulado();   // incluye el saldo inicial
   const bloque=(titulo,ahorro,obj)=>{
     if(!(obj>0)) return `<div class="pbrow"><div class="pbhead"><span class="nm">${titulo}</span><span class="vals">${eur(ahorro)}</span></div><div class="pbnone">Sin objetivo · pulsa "Editar"</div></div>`;
     const pct=Math.round(ahorro/obj*100), pctBar=Math.max(0,Math.min(pct,100));
@@ -767,17 +866,22 @@ function renderObjetivo(){
 $('btnEditarObj').onclick=()=>{
   $('o_mensual').value=(+ajustes.objetivo_mensual>0)?+ajustes.objetivo_mensual:'';
   $('o_acumulado').value=(+ajustes.objetivo_acumulado>0)?+ajustes.objetivo_acumulado:'';
+  $('o_saldo').value=(+ajustes.saldo_inicial)?+ajustes.saldo_inicial:'';
   $('overlayObj').classList.add('open');
 };
 $('cancelObj').onclick=()=>$('overlayObj').classList.remove('open');
 $('overlayObj').onclick=e=>{if(e.target===$('overlayObj'))$('overlayObj').classList.remove('open');};
 $('formObj').onsubmit=async e=>{
   e.preventDefault();
-  const m=parseFloat($('o_mensual').value)||0, a=parseFloat($('o_acumulado').value)||0;
-  if(DEMO){ajustes.objetivo_mensual=m;ajustes.objetivo_acumulado=a;}
-  else{const{error}=await supa.from('ajustes').upsert([{clave:'objetivo_mensual',valor:m},{clave:'objetivo_acumulado',valor:a}],{onConflict:'clave'});
+  const m=parseFloat($('o_mensual').value)||0, a=parseFloat($('o_acumulado').value)||0,
+        s=parseFloat($('o_saldo').value)||0;
+  if(!DEMO){
+    const{error}=await supa.from('ajustes').upsert(
+      [{clave:'objetivo_mensual',valor:m},{clave:'objetivo_acumulado',valor:a},{clave:'saldo_inicial',valor:s}],
+      {onConflict:'clave'});
     if(error){alert('Error al guardar: '+error.message);return;}
-    ajustes.objetivo_mensual=m;ajustes.objetivo_acumulado=a;}
+  }
+  ajustes.objetivo_mensual=m;ajustes.objetivo_acumulado=a;ajustes.saldo_inicial=s;
   $('overlayObj').classList.remove('open'); render();
 };
 
@@ -861,6 +965,246 @@ async function borrarProx(id){
   if(!confirm('¿Eliminar este próximo gasto?'))return;
   if(DEMO){proximos=proximos.filter(x=>x.id!==id);}
   else{const{error}=await supa.from('proximos_gastos').delete().eq('id',id);if(error){alert('Error: '+error.message);return;}proximos=proximos.filter(x=>x.id!==id);}
+  render();
+}
+
+/* ====== Próximas compras (lista de deseos con cola) ====== */
+/* Nota: esta sección NO depende del mes que estés viendo; siempre mira "desde hoy". */
+
+// Ritmo real de ahorro: media del balance de los últimos N meses YA CERRADOS con datos.
+function ritmoAhorro(n=6){
+  const cierres=[];
+  for(let i=1;i<=n;i++){
+    const m=shiftMes(mesActual(),-i);
+    if(transacciones.some(t=>mesDe(t.fecha)===m)) cierres.push(totalesMes(m).bal);
+  }
+  return cierres.length ? cierres.reduce((a,b)=>a+b,0)/cierres.length : 0;
+}
+// Ahorro acumulado: saldo inicial + (ingresos - gastos) de todo lo registrado.
+// Sin saldo_inicial esto solo cuenta desde el primer apunte, y se queda corto.
+function ahorroAcumulado(){
+  let s=+ajustes.saldo_inicial||0;
+  transacciones.forEach(t=>s+=(t.tipo==='ingreso'?+t.importe:-+t.importe));
+  return s;
+}
+// Dinero realmente libre: lo acumulado menos lo comprometido (gastos futuros y lo ya apartado).
+function colchonLibre(){
+  const comprometidoFuturos=proximos.reduce((s,p)=>s+ +p.importe,0);
+  const comprometidoCompras=compras.reduce((s,c)=>s+ +c.ahorrado,0);
+  return ahorroAcumulado()-comprometidoFuturos-comprometidoCompras;
+}
+const comprasOrdenadas = () => [...compras].sort((a,b)=>(a.orden-b.orden)||(a.id-b.id));
+
+// La cola: cada compra hereda el déficit de las que van antes (efecto dominó).
+function colaCompras(){
+  const ritmo=ritmoAhorro(), libre=Math.max(0,colchonLibre());
+  let acum=0;
+  return comprasOrdenadas().map((c,i)=>{
+    const falta=Math.max(0,+c.precio - +c.ahorrado);
+    acum+=falta;
+    const deficit=acum-libre;                       // lo que aún hay que generar para llegar a ESTA
+    const meses = deficit<=0 ? 0 : (ritmo>0 ? Math.ceil(deficit/ritmo) : null);
+    return {c,i,falta,deficit,meses,ritmo};
+  });
+}
+function fechaEnMeses(m){
+  const d=new Date(); d.setDate(1); d.setMonth(d.getMonth()+m);
+  return d.toLocaleDateString('es-ES',{month:'short',year:'numeric'});
+}
+
+function renderCompras(){
+  const cont=$('comprasWrap');
+  const ritmo=ritmoAhorro(), libre=colchonLibre();
+  const cab=`<div class="cmpstats">
+      <div class="st"><div class="lbl">Ritmo de ahorro</div>
+        <div class="val" style="color:${ritmo>0?'var(--green)':'var(--red)'}">${eur(ritmo)}<span style="font-size:11px;font-weight:600">/mes</span></div></div>
+      <div class="st"><div class="lbl">Colchón libre hoy</div>
+        <div class="val" style="color:${libre>=0?'var(--text)':'var(--red)'}">${eur(libre)}</div></div>
+    </div>`;
+  if(!compras.length){
+    cont.innerHTML=cab+'<div class="empty">Sin compras en la lista. Añade eso que llevas tiempo queriendo y te dirá cuándo te lo puedes permitir.</div>';
+    return;
+  }
+  const cola=colaCompras(), n=cola.length;
+  const hoy0=new Date(); hoy0.setHours(0,0,0,0);
+
+  let html=cab;
+  if(ritmo<=0) html+=`<div class="cmpnote" style="margin:-6px 0 10px">⚠️ No estás ahorrando de media, así que no puedo estimar fechas. Sube el ritmo o aparta dinero a mano.</div>`;
+
+  html+=cola.map(({c,i,falta,deficit,meses})=>{
+    const pct=+c.precio>0 ? Math.round(+c.ahorrado/+c.precio*100) : 100;
+    const pctBar=Math.max(0,Math.min(pct,100));
+    const listo=falta<=0 || meses===0;
+    const col=listo?'#13a05c':(pct>=50?'#f4612e':'#8b7fa8');
+
+    let eta,etaCol;
+    if(falta<=0){eta='✅ Ya lo tienes apartado entero';etaCol='var(--green)';}
+    else if(meses===0){eta='✅ Ya te lo puedes permitir';etaCol='var(--green)';}
+    else if(meses===null){eta='⏳ Sin estimación (no ahorras de media)';etaCol='var(--muted)';}
+    else{eta=`⏳ ~${meses} ${meses===1?'mes':'meses'} · ${fechaEnMeses(meses)}`;etaCol=meses<=3?'#f4612e':'var(--muted)';}
+
+    // Aviso de la fecha deseada
+    let nota='';
+    if(i>0 && meses>0) nota=`Cuenta con que antes compras ${i===1?'la anterior':'las '+i+' anteriores'}.`;
+    if(c.fecha_objetivo && falta>0){
+      const fo=new Date(c.fecha_objetivo+'T00:00:00');
+      const mesesHasta=Math.max(0,Math.round((fo-hoy0)/86400000/30.44));
+      const foStr=fo.toLocaleDateString('es-ES',{month:'short',year:'numeric'});
+      if(deficit<=0) nota=`🎯 Lo quieres para ${foStr} y ya te lo puedes permitir.`;
+      else if(mesesHasta<=0) nota=`🎯 Lo querías para ${foStr} y aún te faltan ${eur(deficit)}.`;
+      else if(meses!==null && meses<=mesesHasta) nota=`🎯 Llegas de sobra para ${foStr}.`;
+      else nota=`🎯 Para ${foStr} tendrías que ahorrar <b>${eur(deficit/mesesHasta)}/mes</b> (ahora vas a ${eur(ritmoAhorro())}).`;
+    }
+
+    const cat=c.categoria_id?catById(c.categoria_id):null;
+    return `<div class="cmprow">
+      <div class="cmphead">
+        <span class="cmpnm"><span class="pos">${i+1}.</span>${c.emoji||'🛍️'} ${c.nombre}</span>
+        <span class="cmpprice">${eur(c.precio)}</span>
+      </div>
+      <div class="pbbar"><div class="pbfill" style="width:${pctBar}%;background:${col}"></div></div>
+      <div class="cmpmeta">
+        <span>${eur(c.ahorrado)} / ${eur(c.precio)} · <b>${pct}%</b></span>
+        <span>${falta>0?`Te faltan ${eur(falta)}`:'Completo'}</span>
+      </div>
+      <div class="cmpeta" style="color:${etaCol}">${eta}</div>
+      ${nota?`<div class="cmpnote">${nota}</div>`:''}
+      ${cat?`<div class="cmpnote"><span class="pill" style="background:${cat.color}22;color:${cat.color}">${cat.emoji} ${cat.nombre}</span></div>`:''}
+      <div class="cmpacts">
+        <button class="ordbtn" title="Subir prioridad" data-up="${c.id}" ${i===0?'disabled':''}>▲</button>
+        <button class="ordbtn" title="Bajar prioridad" data-down="${c.id}" ${i===n-1?'disabled':''}>▼</button>
+        <button class="apbtn" data-ap="${c.id}">+ Apartar</button>
+        <span class="sep"></span>
+        <button class="reg" title="Marcar como comprado" data-buy="${c.id}">✓</button>
+        <button class="edt" title="Editar" data-edc="${c.id}">✏️</button>
+        <button class="del" title="Eliminar" data-delc="${c.id}">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  cont.innerHTML=html;
+  cont.querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>moverCompra(+b.dataset.up,-1));
+  cont.querySelectorAll('[data-down]').forEach(b=>b.onclick=()=>moverCompra(+b.dataset.down,1));
+  cont.querySelectorAll('[data-ap]').forEach(b=>b.onclick=()=>abrirApartar(+b.dataset.ap));
+  cont.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>comprarDeseo(+b.dataset.buy));
+  cont.querySelectorAll('[data-edc]').forEach(b=>b.onclick=()=>abrirCompra(+b.dataset.edc));
+  cont.querySelectorAll('[data-delc]').forEach(b=>b.onclick=()=>borrarCompra(+b.dataset.delc));
+}
+
+/* --- Reordenar la cola --- */
+async function moverCompra(id,delta){
+  const lista=comprasOrdenadas();
+  const i=lista.findIndex(x=>x.id===id), j=i+delta;
+  if(i<0||j<0||j>=lista.length)return;
+  [lista[i],lista[j]]=[lista[j],lista[i]];
+  lista.forEach((c,k)=>c.orden=k);
+  if(!DEMO){
+    const res=await Promise.all(lista.map(c=>supa.from('compras_deseadas').update({orden:c.orden}).eq('id',c.id)));
+    const err=res.find(r=>r.error);
+    if(err){alert('Error al reordenar: '+err.error.message);await cargar();return;}
+  }
+  render();
+}
+
+/* --- Alta / edición --- */
+function abrirCompra(id){
+  compraEditId=id||null;
+  const sel=$('cm_categoria');
+  sel.innerHTML='<option value="">— sin categoría —</option>'+
+    categorias.filter(c=>c.tipo==='gasto'&&!c.padre_id).map(c=>`<option value="${c.id}">${c.emoji} ${c.nombre}</option>`).join('');
+  if(id){
+    const c=compras.find(x=>x.id===id);
+    $('cm_emoji').value=c.emoji||'🛍️'; $('cm_nombre').value=c.nombre; $('cm_precio').value=c.precio;
+    $('cm_ahorrado').value=+c.ahorrado||''; $('cm_fecha').value=c.fecha_objetivo||''; sel.value=c.categoria_id||'';
+  }else{
+    $('cm_emoji').value='🛍️'; $('cm_nombre').value=''; $('cm_precio').value='';
+    $('cm_ahorrado').value=''; $('cm_fecha').value=''; sel.value='';
+  }
+  $('overlayCompra').classList.add('open');
+}
+$('btnAddCompra').onclick=()=>abrirCompra();
+$('cancelCompra').onclick=()=>$('overlayCompra').classList.remove('open');
+$('overlayCompra').onclick=e=>{if(e.target===$('overlayCompra'))$('overlayCompra').classList.remove('open');};
+$('formCompra').onsubmit=async e=>{
+  e.preventDefault();
+  const reg={
+    nombre:$('cm_nombre').value.trim(),
+    precio:parseFloat($('cm_precio').value)||0,
+    ahorrado:Math.max(0,parseFloat($('cm_ahorrado').value)||0),
+    fecha_objetivo:$('cm_fecha').value||null,
+    categoria_id:$('cm_categoria').value?parseInt($('cm_categoria').value):null,
+    emoji:$('cm_emoji').value.trim()||'🛍️'
+  };
+  if(!reg.nombre||!(reg.precio>0)){alert('Pon al menos el nombre y un precio mayor que 0.');return;}
+  if(reg.ahorrado>reg.precio){alert('Lo apartado no puede superar al precio.');return;}
+  if(DEMO){
+    if(compraEditId)Object.assign(compras.find(x=>x.id===compraEditId),reg);
+    else{reg.id=Date.now();reg.orden=compras.length;compras.push(reg);}
+  }else{
+    if(compraEditId){
+      const{error}=await supa.from('compras_deseadas').update(reg).eq('id',compraEditId);
+      if(error){alert('Error: '+error.message);return;}
+      Object.assign(compras.find(x=>x.id===compraEditId),reg);
+    }else{
+      reg.orden=compras.length;
+      const{data,error}=await supa.from('compras_deseadas').insert(reg).select().single();
+      if(error){alert('Error: '+error.message);return;}
+      compras.push(data);
+    }
+  }
+  $('overlayCompra').classList.remove('open'); render();
+};
+
+/* --- Apartar dinero (la "hucha" de cada capricho) --- */
+function abrirApartar(id){
+  apartarId=id;
+  const c=compras.find(x=>x.id===id); if(!c)return;
+  const falta=Math.max(0,+c.precio - +c.ahorrado);
+  $('apInfo').innerHTML=`<b>${c.emoji||'🛍️'} ${c.nombre}</b> · llevas ${eur(c.ahorrado)} de ${eur(c.precio)}`+
+    (falta>0?` · te faltan ${eur(falta)}`:' · completo')+`<br>Colchón libre: <b>${eur(colchonLibre())}</b>`;
+  $('ap_importe').value=falta>0?Math.min(falta,Math.max(0,colchonLibre())).toFixed(2):'';
+  $('overlayApartar').classList.add('open');
+}
+$('cancelApartar').onclick=()=>$('overlayApartar').classList.remove('open');
+$('overlayApartar').onclick=e=>{if(e.target===$('overlayApartar'))$('overlayApartar').classList.remove('open');};
+$('formApartar').onsubmit=async e=>{
+  e.preventDefault();
+  const c=compras.find(x=>x.id===apartarId); if(!c)return;
+  const delta=parseFloat($('ap_importe').value)||0;
+  const nuevo=Math.round(Math.max(0,Math.min(+c.precio,+c.ahorrado+delta))*100)/100;
+  if(nuevo===+c.ahorrado){alert('Eso no cambia nada (recuerda: no puede bajar de 0 ni pasar del precio).');return;}
+  if(!DEMO){
+    const{error}=await supa.from('compras_deseadas').update({ahorrado:nuevo}).eq('id',c.id);
+    if(error){alert('Error: '+error.message);return;}
+  }
+  c.ahorrado=nuevo;
+  $('overlayApartar').classList.remove('open'); render();
+};
+
+/* --- Comprarlo de verdad: pasa a transacción y sale de la lista --- */
+const catPorDefectoCompra = () =>
+  (categorias.find(c=>c.nombre==='Compras'&&!c.padre_id) || categorias.find(c=>c.tipo==='gasto'&&!c.padre_id) || {}).id || null;
+async function comprarDeseo(id){
+  const c=compras.find(x=>x.id===id); if(!c)return;
+  if(!confirm(`¿Registrar "${c.nombre}" como gasto de ${eur(c.precio)} con fecha de hoy?\n\nSaldrá de la lista de próximas compras.`))return;
+  const nueva={fecha:new Date().toISOString(),importe:+c.precio,tipo:'gasto',
+               categoria_id:c.categoria_id||catPorDefectoCompra(),descripcion:c.nombre,origen:'manual'};
+  if(DEMO){nueva.id=Date.now();transacciones.unshift(nueva);compras=compras.filter(x=>x.id!==id);}
+  else{
+    const{data,error}=await supa.from('transacciones').insert(nueva).select().single();
+    if(error){alert('Error al crear el gasto: '+error.message);return;}
+    transacciones.unshift(data);
+    const{error:e2}=await supa.from('compras_deseadas').delete().eq('id',id);
+    if(e2){alert('Gasto creado, pero no pude quitarlo de la lista: '+e2.message);}
+    compras=compras.filter(x=>x.id!==id);
+  }
+  render();
+}
+async function borrarCompra(id){
+  const c=compras.find(x=>x.id===id);
+  if(!confirm(`¿Quitar "${c?c.nombre:'esto'}" de la lista de próximas compras?`))return;
+  if(!DEMO){const{error}=await supa.from('compras_deseadas').delete().eq('id',id);if(error){alert('Error: '+error.message);return;}}
+  compras=compras.filter(x=>x.id!==id);
   render();
 }
 

@@ -3,3 +3,6 @@
 Thumbs.db
 *.bak
 node_modules/
+
+# Lleva el token del bot de Telegram en claro: NO subir
+scripts/_check.js

@@ -76,9 +76,7 @@
   .seg.big button.on.ingreso{background:var(--acc);color:var(--on-acc)}
 
   /* ====== Estructura ====== */
-  .dash{max-width:520px;margin:0 auto;padding:calc(22px + var(--safe-t)) 18px calc(118px + var(--safe-b));display:flex;flex-direction:column;gap:26px}
-  .row1,.cols,.colL,.colR{display:contents}
-  .top{order:0}.o-bal{order:1}.o-pres{order:2}.o-cat{order:3}.o-mov{order:4}.o-evo{order:5}.o-aho{order:6}.o-fut{order:7}.o-cmp{order:8}
+  .dash{max-width:520px;margin:0 auto;padding:calc(22px + var(--safe-t)) 18px calc(124px + var(--safe-b));display:flex;flex-direction:column;gap:22px}
   @media (max-width:999.98px){ .d{display:none!important} }
 
   /* Cabecera */
@@ -103,83 +101,66 @@
   .cta-top{border:0;background:var(--acc);color:var(--on-acc);font-weight:700;font-size:14px;padding:12px 20px;border-radius:999px;min-height:44px}
   .cta-top:hover{background:var(--acc-h)}
   .cta{position:fixed;left:0;right:0;bottom:0;z-index:20;padding:16px 18px calc(24px + var(--safe-b));background:linear-gradient(to top,var(--bg) 62%,rgba(11,12,9,0))}
-  .cta .btn{display:block;max-width:484px;margin:0 auto}
+  .cta .btn{display:block;max-width:484px;margin:0 auto;height:58px;border-radius:22px;font-size:17px;letter-spacing:-.01em}
 
-  /* Balance */
-  .bal{border-radius:22px;padding:20px;display:flex;flex-direction:column;gap:18px}
-  .bal.neg{background:var(--bad-bg);border-color:var(--bad-bd)}
-  .bal.neg .bar{background:var(--bad-track)}
-  .bal.neg .sep{background:var(--bad-bd)}
-  .bal-rows{display:flex;flex-direction:column;gap:10px}
-  .bal-row{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
-  .bal-row.mt{margin-top:4px}
-  .bal-v{font-size:16px;font-weight:700}
-  .bal-v small{font-family:var(--mono);font-size:10.5px;font-weight:400;color:var(--ter);margin-left:7px}
-  .bar.b10{height:10px;border-radius:10px}
-  .bal-foot{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
-  .bal-foot .c{display:flex;flex-direction:column;gap:4px;min-width:0}
-  .bal-foot .c.r{align-items:flex-end;gap:3px;padding-bottom:3px}
-  .big{font-size:42px;font-weight:800;letter-spacing:-.04em;line-height:1;white-space:nowrap}
-  .aho{font-size:17px;font-weight:800;white-space:nowrap}
-  .bal.d{padding:22px;gap:16px}
-  .bal.d .big{font-size:46px}
-  .kv{display:flex;justify-content:space-between;gap:8px;font-size:13px}
-  .kv span{color:var(--mut)} .kv b{font-weight:700}
-  .note{font-size:13px;color:var(--mut)} .note b{font-weight:700}
+  /* Presupuesto del mes (bloque principal) */
+  .hero{border-radius:22px;padding:20px 20px 18px;display:flex;flex-direction:column}
+  .hero.over{border-color:var(--bad-bd)}
+  .hero-l1{display:flex;align-items:baseline;justify-content:space-between;gap:6px 10px;flex-wrap:wrap}
+  .hero-big{font-size:46px;font-weight:800;letter-spacing:-.035em;line-height:1;white-space:nowrap}
+  .hero-big .cts{font-size:22px;font-weight:700;letter-spacing:-.01em}
+  .hero-big .de{font-size:15px;color:var(--mut);margin-left:6px;font-weight:500;letter-spacing:0}
+  .hero-dias{font-size:13px;font-weight:600;color:var(--mut);white-space:nowrap}
+  .hero .bar{height:9px;border-radius:9px;margin:18px 0 14px}
+  .hero-l3{font-size:12.5px;color:var(--mut);line-height:1.5}
+  .hero-l3 b{color:var(--ink);font-weight:600}
+  .hero-over{font-size:12.5px;font-weight:600;color:var(--bad);margin-top:6px}
 
-  /* Presupuesto */
-  .pres{border-radius:22px;padding:18px 20px 16px;display:flex;flex-direction:column;gap:14px}
-  .pres.over{border-color:var(--bad-bd)}
-  .pres-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
-  .pres-g{font-size:28px;font-weight:800;letter-spacing:-.035em;line-height:1;white-space:nowrap}
-  .pres-g small{font-size:14px;font-weight:500;color:var(--mut);margin-left:7px;letter-spacing:0}
-  .pres-dias{font-size:12.5px;font-weight:600;color:var(--mut);white-space:nowrap}
-  .bar.b9{height:9px;border-radius:9px}
-  .pres-pie{font-size:12.5px;color:var(--mut);line-height:1.5}
-  .pres-pie b{color:var(--ink);font-weight:600}
-  .pres-over{font-size:12.5px;font-weight:600;color:var(--bad)}
-  .pres.d{padding:22px;justify-content:space-between;gap:16px}
-  .pres.d .pres-g{font-size:32px}
-  .pres.d .pres-g small{font-size:15px}
-  .pres-body{display:flex;flex-direction:column;gap:12px}
+  /* Ingresos · Gastos · Ahorro */
+  .kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+  .tile{border-radius:16px;padding:13px 12px 14px;display:flex;flex-direction:column;justify-content:space-between;gap:6px;min-width:0}
+  .tile .l{font-size:12px;color:var(--mut)}
+  .tile .v{font-size:19px;font-weight:800;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tile .s{font-family:var(--mono);font-size:10px;color:var(--ter);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
   /* Categorías */
-  .reparto{display:flex;height:12px;border-radius:6px;overflow:hidden;gap:2px}
-  .reparto i{display:block}
   .cats{display:flex;flex-direction:column;gap:2px}
-  .cat-row{border:0;background:transparent;width:100%;text-align:left;padding:9px 0;display:grid;
-    grid-template-columns:12px minmax(0,1fr) 92px;grid-template-areas:"dot head amt" "dot bar amt";column-gap:10px;row-gap:6px;align-items:center;border-radius:8px}
-  button.cat-row:hover{background:var(--hover)}
-  .cat-dot{grid-area:dot;width:10px;height:10px;border-radius:3px;display:block}
-  .cat-head{grid-area:head;display:flex;align-items:center;gap:7px;min-width:0}
-  .cat-nm{font-size:13.5px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .cat-pill{font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;padding:2px 5px;border-radius:5px;white-space:nowrap;background:var(--sep);color:var(--mut)}
-  .cat-pill.over{background:var(--bad-pill);color:var(--bad)}
-  .cat-row .bar{grid-area:bar}
-  .cat-amt{grid-area:amt;text-align:right;font-size:13px;font-weight:700;white-space:nowrap;color:var(--ink)}
-  .cat-subs{padding-left:22px;margin:2px 0 8px 5px;border-left:1px solid var(--bd);display:flex;flex-direction:column;gap:1px}
-  .sub-row{display:grid;grid-template-columns:minmax(0,1fr) auto 92px;align-items:center;gap:10px;padding:5px 0}
-  .sub-nm{font-size:12.5px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .sub-p{font-family:var(--mono);font-size:9.5px;color:var(--ter);white-space:nowrap}
-  .sub-p.over{color:var(--bad)}
-  .sub-v{text-align:right;font-size:12px;font-weight:600;color:var(--mut)}
+  .crow{display:grid;grid-template-columns:minmax(0,122px) minmax(0,1fr) 90px;align-items:center;gap:12px;padding:8px 0;border:0;background:transparent;text-align:left;width:100%}
+  button.crow:hover .cn{color:var(--acc)}
+  .cn{font-size:14px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:6px;min-width:0}
+  .cn-t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cn .car{font-size:8px;color:var(--ter);transition:transform .15s;flex:none}
+  .crow[aria-expanded="true"] .car{transform:rotate(90deg)}
+  .cbar{display:block;height:9px;border-radius:9px;background:var(--track);overflow:hidden}
+  .cbar i{display:block;height:100%;border-radius:9px;background:var(--acc)}
+  .cbar.over i{background:var(--bad)}
+  .cv{text-align:right;font-weight:700;font-size:13.5px;white-space:nowrap}
+  .cv small{color:var(--ter);font-weight:500;font-size:11px}
+  .cv.over{color:var(--bad)}
+  .kids{padding-left:14px;border-left:1px solid var(--bd);margin:0 0 6px 4px;display:flex;flex-direction:column}
+  .kids .crow{grid-template-columns:minmax(0,1fr) 56px 90px;padding:5px 0}
+  .kids .cn{font-size:13px;font-weight:500;color:var(--mut)}
+  .kids .cbar{height:6px}
+  .kids .cv{font-weight:600;font-size:12.5px}
   .sub-act{align-self:flex-start;border:0;background:transparent;color:var(--acc);font-size:12px;font-weight:600;padding:8px 0}
-  .pie{font-size:12px;color:var(--ter)}
+  .pie{font-size:12px;color:var(--ter);margin-top:4px;line-height:1.5}
   .cnt-over{font-family:var(--mono);font-size:10px;color:var(--bad)}
+  @media (max-width:370px){
+    .crow{grid-template-columns:minmax(0,104px) minmax(0,1fr) 84px;gap:10px}
+    .kids .crow{grid-template-columns:minmax(0,1fr) 44px 84px}
+  }
 
   /* Movimientos */
   .movs{overflow:hidden}
-  .mov{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 16px;border:0;border-bottom:1px solid var(--sep);background:transparent;width:100%;text-align:left}
+  .mov{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 16px;border:0;border-bottom:1px solid var(--bd);background:transparent;width:100%;text-align:left}
   .mov:last-child{border-bottom:0}
   .mov:hover{background:var(--hover)}
-  .mov-l{display:flex;align-items:center;gap:11px;min-width:0}
-  .mov-dot{width:8px;height:8px;border-radius:3px;flex:none;display:block}
-  .mov-t{display:flex;flex-direction:column;gap:3px;min-width:0}
-  .mov-c{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .mov-m{font-family:var(--mono);font-size:10.5px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .mov-r{display:flex;align-items:center;gap:9px;white-space:nowrap}
-  .bot{font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--mut);border:1px solid var(--bd);border-radius:5px;padding:2px 5px}
-  .mov-i{font-size:14px;font-weight:700}
+  .mov-t{display:flex;flex-direction:column;gap:2px;min-width:0}
+  .mov-c{font-size:14.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mov-m{font-family:var(--mono);font-size:11px;color:var(--mut);display:flex;align-items:center;gap:6px;min-width:0;white-space:nowrap}
+  .mov-m>span:first-child{overflow:hidden;text-overflow:ellipsis}
+  .bot{font-family:var(--mono);font-size:9px;letter-spacing:.08em;color:var(--ter);border:1px solid var(--bd);border-radius:5px;padding:0 5px;flex:none}
+  .mov-i{font-size:14.5px;font-weight:700;white-space:nowrap}
   .vacio-mov{background:var(--card);border:1px dashed var(--bd-dash);border-radius:20px;padding:24px 20px;display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center}
   .vacio-mov .cero{font-size:32px;font-weight:800;letter-spacing:-.04em;color:var(--ter)}
   .vacio-mov p{font-size:13.5px;color:var(--mut);line-height:1.5;max-width:260px;text-wrap:pretty}
@@ -327,7 +308,19 @@
   /* ====== Escritorio ====== */
   @media (min-width:1000px){
     .m{display:none!important}
-    .dash{max-width:1200px;padding:30px 32px 48px;gap:26px}
+    .dash{max-width:1200px;padding:30px 32px 48px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:26px 34px;align-items:start;
+      grid-template-areas:"top top" "hero kpis" "cat mov" "evo aho" "fut cmp"}
+    .top{grid-area:top}.o-hero{grid-area:hero}.o-kpi{grid-area:kpis}.o-cat{grid-area:cat}.o-mov{grid-area:mov}
+    .o-evo{grid-area:evo}.o-aho{grid-area:aho}.o-fut{grid-area:fut}.o-cmp{grid-area:cmp}
+    .o-hero,.o-kpi{align-self:stretch;display:flex;flex-direction:column}
+    .o-hero>.card,.o-kpi>.kpis{flex:1}
+    .hero{justify-content:center}
+    .tile{padding:18px 18px 16px;border-radius:20px}
+    .tile .v{font-size:26px}
+    .tile .l{font-size:13px}
+    .tile .s{font-size:10.5px}
+    .crow{grid-template-columns:minmax(0,130px) minmax(0,1fr) 112px}
+    .kids .crow{grid-template-columns:minmax(0,116px) minmax(0,1fr) 112px}
     .top{align-items:center}
     .brandwrap{flex-direction:row;align-items:center;gap:22px}
     .brand{font-size:11px}
@@ -336,18 +329,7 @@
     .mes span{font-size:14px}
     .hoy{margin-top:0;align-self:center}
     .cta{display:none}
-    .row1{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr) minmax(0,1fr);gap:16px}
-    .row1>section{display:flex;flex-direction:column}
-    .row1>section>.card{flex:1}
-    .cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:34px;align-items:start}
-    .colL,.colR{display:flex;flex-direction:column;gap:26px;min-width:0}
-    .cat-row{grid-template-columns:12px minmax(0,118px) minmax(0,1fr) 104px 96px;grid-template-areas:"dot nm bar pill amt";column-gap:12px;padding:8px 0}
-    .cat-head{display:contents}
-    .cat-nm{grid-area:nm}
-    .cat-pill{grid-area:pill;text-align:center;padding:3px 6px}
-    .cat-subs{padding-left:24px}
-    .sub-row{grid-template-columns:minmax(0,1fr) auto 96px;gap:12px}
-    .mov{padding:13px 18px}
+    .mov{padding:14px 18px}
     .evo{padding:20px;justify-content:space-around;gap:12px}
     .evo-col{flex:0 1 auto;padding:10px 14px;border-radius:14px}
     .evo-bars{height:130px;gap:6px}
@@ -426,31 +408,22 @@
       <button class="hoy" data-act="mes-hoy" id="mesHoy" hidden>Volver al mes actual</button>
     </div>
     <div class="top-r">
-      <button class="cta-top d" data-act="mov-add">Añadir movimiento</button>
+      <button class="cta-top d" data-act="mov-add">Añadir gasto</button>
       <button class="avatar" data-act="menu" id="avatar" aria-label="Menú">·</button>
     </div>
   </header>
 
-  <div class="row1">
-    <section class="o-bal" id="secBal" aria-label="Ingresos, gastos y balance"></section>
-    <section class="o-pres" id="secPres" aria-label="Presupuesto total"></section>
-    <section class="o-aho" id="secAho" aria-label="Ahorro"></section>
-  </div>
-
-  <div class="cols">
-    <div class="colL">
-      <section class="o-cat sec" id="secCat"></section>
-      <section class="o-evo sec" id="secEvo"></section>
-    </div>
-    <div class="colR">
-      <section class="o-mov sec" id="secMov"></section>
-      <section class="o-fut sec" id="secFut"></section>
-      <section class="o-cmp sec" id="secCmp"></section>
-    </div>
-  </div>
+  <section class="o-hero" id="secPres" aria-label="Gasto del mes frente al presupuesto"></section>
+  <section class="o-kpi" id="secKpi" aria-label="Ingresos, gastos y ahorro del mes"></section>
+  <section class="o-cat sec" id="secCat"></section>
+  <section class="o-mov sec" id="secMov"></section>
+  <section class="o-evo sec" id="secEvo"></section>
+  <section class="o-aho sec" id="secAho"></section>
+  <section class="o-fut sec" id="secFut"></section>
+  <section class="o-cmp sec" id="secCmp"></section>
 </main>
 
-<div class="cta" id="cta" hidden><button class="btn" data-act="mov-add">Añadir movimiento</button></div>
+<div class="cta" id="cta" hidden><button class="btn" data-act="mov-add">Añadir gasto</button></div>
 <div class="toasts" id="toasts" aria-live="polite"></div>
 
 <script>
@@ -779,7 +752,7 @@ function fechaEnMeses(m){
 /* ====== Render ====== */
 function render(){
   if($('vApp').hidden) return;
-  renderCabecera(); renderBalance(); renderPresupuesto(); renderAhorro();
+  renderCabecera(); renderPresupuesto(); renderKpis(); renderAhorro();
   renderCategorias(); renderEvolucion(); renderMovimientos(); renderFuturos(); renderCompras();
   pila.forEach(h=>h.refrescar&&h.refrescar());
 }
@@ -799,78 +772,43 @@ function renderCabecera(){
   $('avatar').textContent = DEMO ? 'D' : (email[0]||'·').toUpperCase();
 }
 
-function renderBalance(){
-  const t=totalesMes(mesSel), neg=t.bal<0, max=Math.max(t.ing,t.gas)||1;
-  const col=t.bal>0?ACC:t.bal<0?BAD:MUT;
-  const ahorro=t.ing>0?(t.bal<0?MENOS:'')+Math.abs(Math.round(t.bal/t.ing*100))+' %':'—';
-  const w=v=>(v/max*100).toFixed(1)+'%';
-  const {nombre}=partesMes(mesSel);
-  $('secBal').innerHTML=`
-  <div class="card bal m ${neg?'neg':''}">
-    ${neg?'<div class="alerta"><i></i>Balance negativo</div>':''}
-    <div class="bal-rows">
-      <div class="bal-row"><span class="lbl">Ingresos</span><span class="bal-v num">${eur(t.ing)}<small title="apuntes">${t.nIng}</small></span></div>
-      <div class="bar b10"><i style="width:${w(t.ing)};background:${ACC}"></i></div>
-      <div class="bal-row mt"><span class="lbl">Gastos</span><span class="bal-v num">${eur(t.gas)}<small title="apuntes">${t.nGas}</small></span></div>
-      <div class="bar b10"><i style="width:${w(t.gas)};background:${BAD}"></i></div>
-    </div>
-    <div class="sep"></div>
-    <div class="bal-foot">
-      <div class="c"><span class="lbl">Balance</span><span class="big num" style="color:${col}">${conSigno(t.bal)}</span></div>
-      <div class="c r"><span class="lbl sm">Ahorro</span><span class="aho num" style="color:${col}">${ahorro}</span></div>
-    </div>
-  </div>
-  <div class="card bal d ${neg?'neg':''}">
-    <div class="sec-h"><span class="lbl">Balance de ${nombre}</span>${neg?'<span class="tag">Negativo</span>':''}</div>
-    <span class="big num" style="color:${col}">${conSigno(t.bal)}</span>
-    <div class="bal-rows" style="gap:8px">
-      <div class="kv"><span>Ingresos · ${t.nIng}</span><b class="num">${eur(t.ing)}</b></div>
-      <div class="bar b9"><i style="width:${w(t.ing)};background:${ACC}"></i></div>
-      <div class="kv" style="margin-top:2px"><span>Gastos · ${t.nGas}</span><b class="num">${eur(t.gas)}</b></div>
-      <div class="bar b9"><i style="width:${w(t.gas)};background:${BAD}"></i></div>
-    </div>
-    <div class="note">Ahorro del mes <b class="num" style="color:${col}">${ahorro}</b></div>
-  </div>`;
-}
-
+// Bloque principal: gasto del mes frente al presupuesto total
 function renderPresupuesto(){
-  const t=totalesMes(mesSel), tot=presupuestoTotal();
+  const t=totalesMes(mesSel), tot=presupuestoTotal(), esAct=mesSel===mesActual();
+  const dm=diasEnMes(mesSel), hoyD=new Date().getDate(), quedan=dm-hoyD+1;
+  // media diaria: días transcurridos en el mes en curso; días naturales en los meses cerrados
+  const media=t.gas/(esAct?hoyD:dm);
+  const diasTxt = esAct ? (quedan===1?'queda 1 día':`quedan ${quedan} días`) : 'mes cerrado';
+  const [ent,cts]=num(t.gas,2).split(',');
+  const cifra=`<span class="hero-big num">${ent}<span class="cts">,${cts} €</span>${tot?`<span class="de">de ${eurC(tot)}</span>`:''}</span>`;
   if(!tot){
-    $('secPres').innerHTML=`<div class="card pres">
-      <span class="lbl">Presupuesto total</span>
-      <div class="pres-pie">Todavía no tienes presupuestos. Fíjalos por categoría y aquí verás cuánto te queda cada mes.</div>
-      <button class="btn2" data-act="pres-editar">Crear presupuestos</button>
+    $('secPres').innerHTML=`<div class="card hero">
+      <div class="hero-l1">${cifra}<span class="hero-dias">${diasTxt}</span></div>
+      <div class="hero-l3" style="margin-top:14px">Gastado este mes · Media diaria <b class="num">${eur(media)}</b> · Sin presupuestos todavía</div>
+      <button class="btn2" style="align-self:flex-start;margin-top:14px" data-act="pres-editar">Crear presupuestos</button>
     </div>`;
     return;
   }
-  const pct=Math.round(t.gas/tot*100), over=t.gas>tot, rest=tot-t.gas, col=over?BAD:ACC;
-  const act=mesActual(), dm=diasEnMes(mesSel), hoyD=new Date().getDate();
-  const quedan=dm-hoyD+1;
-  const dias = mesSel===act ? (quedan===1?'queda 1 día':`quedan ${quedan} días`) : 'mes cerrado';
-  // media diaria: días transcurridos en el mes en curso; días naturales en los meses cerrados
-  const media=t.gas/(mesSel===act?hoyD:dm);
+  const pct=Math.round(t.gas/tot*100), over=t.gas>tot, rest=tot-t.gas;
   const nOver=filasCategoria(mesSel,'gasto').filas.filter(f=>f.over).length;
-  const overTxt=`Te has pasado ${eur(-rest)} · ${nOver} ${nOver===1?'categoría':'categorías'} fuera de presupuesto`;
-  const restTxt=over?`te has pasado ${eur(-rest)}`:`quedan ${eur(rest)}`;
-  const barra=`<div class="bar b9"><i style="width:${Math.min(100,pct)}%;background:${col}"></i></div>`;
-  $('secPres').innerHTML=`
-  <div class="card pres m ${over?'over':''}">
-    <div class="pres-top">
-      <span class="pres-g num" ${over?`style="color:${BAD}"`:''}>${eur(t.gas)}<small>de ${eur(tot)}</small></span>
-      <span class="pres-dias">${dias}</span>
-    </div>
-    ${barra}
-    <div class="pres-pie">${pct} % del presupuesto · media diaria <b class="num">${eur(media)}</b> · <span style="color:${col}">${restTxt}</span></div>
-    ${over?`<div class="pres-over">${overTxt}</div>`:''}
-  </div>
-  <div class="card pres d ${over?'over':''}">
-    <div class="sec-h"><span class="lbl">Presupuesto total</span>${over?'<span class="tag">Superado</span>':''}</div>
-    <div class="pres-body">
-      <span class="pres-g num" ${over?`style="color:${BAD}"`:''}>${eur(t.gas)}<small>de ${eur(tot)}</small></span>
-      ${barra}
-      <div class="pres-pie">${pct} % · ${dias} · media diaria <b class="num">${eur(media)}</b> · <span style="color:${col}">${restTxt}</span></div>
-      ${over?`<div class="pres-over">${overTxt}</div>`:''}
-    </div>
+  $('secPres').innerHTML=`<div class="card hero ${over?'over':''}">
+    <div class="hero-l1">${cifra}<span class="hero-dias" ${over?`style="color:${BAD}"`:''}>${over?`te pasas ${eur(-rest)}`:diasTxt}</span></div>
+    <div class="bar" role="img" aria-label="${pct} % del presupuesto"><i style="width:${Math.min(100,pct)}%;background:${over?BAD:ACC}"></i></div>
+    <div class="hero-l3">${pct} % del presupuesto · Media diaria <b class="num">${eur(media)}</b> · ${over?diasTxt.replace(/^./,c=>c.toUpperCase()):`Quedan <b class="num">${eur(rest)}</b>`}</div>
+    ${nOver?`<div class="hero-over">${nOver} ${nOver===1?'categoría fuera':'categorías fuera'} de presupuesto</div>`:''}
+  </div>`;
+}
+
+// Ingresos · Gastos · Ahorro (balance) del mes
+function renderKpis(){
+  const t=totalesMes(mesSel);
+  const tasa=t.ing>0?Math.round(t.bal/t.ing*100):null;
+  const col=t.bal>0?ACC:t.bal<0?BAD:INK;
+  const ap=n=>n===1?'1 apunte':`${n} apuntes`;
+  $('secKpi').innerHTML=`<div class="kpis">
+    <div class="card tile"><span class="l">Ingresos</span><span class="v num" title="${eur(t.ing)}">${eur0(t.ing)}</span><span class="s">${ap(t.nIng)}</span></div>
+    <div class="card tile"><span class="l">Gastos</span><span class="v num" title="${eur(t.gas)}">${eur0(t.gas)}</span><span class="s">${ap(t.nGas)}</span></div>
+    <div class="card tile"><span class="l">Ahorro</span><span class="v num" style="color:${col}" title="Balance del mes: ${conSigno(t.bal)}">${eur0(t.bal)}</span><span class="s">${tasa===null?'sin ingresos':`tasa ${num(tasa,0)} %`}</span></div>
   </div>`;
 }
 
@@ -897,45 +835,48 @@ function renderAhorro(){
   const ahorroMes=totalesMes(mesSel).bal, acum=ahorroAcumulado();
   const tMes=mesSel===mesActual()?'Objetivo del mes':'Objetivo de '+partesMes(mesSel).nombre;
   const oMes=tarjetaObjetivo(tMes,ahorroMes,objM), oAcu=tarjetaObjetivo('Ahorro acumulado',acum,objA,'/');
-  $('secAho').innerHTML=`
-  <div class="sec m"><h3 class="h3">Ahorro</h3><div class="aho-grid">${oMes}${oAcu}</div></div>
-  <div class="aho-stack d">${oAcu}${oMes}</div>`;
+  $('secAho').innerHTML=`<div class="sec-h"><h3 class="h3">Objetivos de ahorro</h3></div><div class="aho-grid">${oMes}${oAcu}</div>`;
 }
 
 function renderCategorias(){
-  const {filas,total}=filasCategoria(mesSel,modoCat);
+  const {filas}=filasCategoria(mesSel,modoCat);
   const esG=modoCat==='gasto';
+  const conDinero=filas.filter(f=>f.v>0), sinGasto=filas.filter(f=>!(f.v>0));
   const nOver=filas.filter(f=>f.over).length;
-  let cuerpo='';
-  if(!filas.length){
+  const maxV=Math.max(1,...conDinero.map(f=>f.v));
+  // barra: gasto sobre su presupuesto; sin presupuesto, frente a la categoría más alta
+  const barra=(v,base,over)=>`<span class="cbar ${over?'over':''}"><i style="width:${base?Math.min(100,v/base*100).toFixed(1):0}%"></i></span>`;
+  const importe=(v,lim,over,f=eur0)=>`<span class="cv num ${over?'over':''}">${f(v)}${lim?`<small> /${num(lim,0)}</small>`:''}</span>`;
+  let cuerpo;
+  if(!conDinero.length){
     cuerpo=`<div class="vacio">No hay ${esG?'gastos':'ingresos'} en ${partesMes(mesSel).nombre}.</div>`;
   }else{
-    const reparto=total?`<div class="reparto" aria-hidden="true">${filas.filter(f=>f.v>0).map(f=>`<i style="width:${f.share.toFixed(1)}%;background:${f.col}"></i>`).join('')}</div>`:'';
-    const lista=filas.map(f=>{
-      const pill = f.lim ? `${Math.round(f.v/f.lim*100)}% de ${eur(f.lim)}` : (esG ? 'sin presupuesto' : `${Math.round(f.share)}% del total`);
+    cuerpo='<div class="cats">'+conDinero.map(f=>{
       const puede = f.subs.length>0 || (esG && f.id!=='_none');
       const abierta = puede && catAbierta===f.id;
-      const inner=`<i class="cat-dot" style="background:${f.col}"></i>
-        <span class="cat-head"><span class="cat-nm">${esc(f.cat.nombre)}</span><span class="cat-pill ${f.over?'over':''}">${pill}</span></span>
-        <span class="bar"><i style="width:${f.barW};background:${f.col}"></i></span>
-        <span class="cat-amt num">${eur(f.v)}</span>`;
+      const titulo=`${esc(f.cat.nombre)}: ${eur(f.v)}${f.lim?` de ${eur(f.lim)} (${Math.round(f.v/f.lim*100)} %)`:''}`;
+      const inner=`<span class="cn">${puede?'<span class="car" aria-hidden="true">▶</span>':''}<span class="cn-t">${esc(f.cat.nombre)}</span></span>
+        ${barra(f.v,f.lim||maxV,f.over)}${importe(f.v,f.lim,f.over)}`;
       const fila = puede
-        ? `<button class="cat-row" data-act="cat-toggle" data-id="${f.id}" aria-expanded="${abierta}">${inner}</button>`
-        : `<div class="cat-row">${inner}</div>`;
-      let subs='';
+        ? `<button class="crow" data-act="cat-toggle" data-id="${f.id}" aria-expanded="${abierta}" title="${titulo}">${inner}</button>`
+        : `<div class="crow" title="${titulo}">${inner}</div>`;
+      let kids='';
       if(abierta){
-        subs=`<div class="cat-subs">${f.subs.map(s=>`<div class="sub-row">
-            <span class="sub-nm">${esc(s.nombre)}</span>
-            <span class="sub-p ${s.lim&&s.v>s.lim?'over':''}">${s.lim?`${Math.round(s.v/s.lim*100)}% de ${eur(s.lim)}`:''}</span>
-            <span class="sub-v num">${eur(s.v)}</span></div>`).join('')}
-          ${esG&&f.id!=='_none'?`<button class="sub-act" data-act="pres-editar" data-id="${f.id}">${f.lim?'Cambiar presupuesto':'+ Fijar presupuesto'}</button>`:''}
+        const ref=f.lim||f.v;
+        kids=`<div class="kids">${f.subs.map(s=>{
+            const so=s.lim>0&&s.v>s.lim;
+            return `<div class="crow"><span class="cn"><span class="cn-t">${esc(s.nombre)}</span></span>${barra(s.v,s.lim||ref,so)}${importe(s.v,s.lim,so,eur)}</div>`;
+          }).join('')}
+          ${esG&&f.id!=='_none'?`<button class="sub-act" data-act="pres-editar" data-id="${f.id}">${f.lim?`Presupuesto ${eurC(f.lim)} · cambiar`:'+ Fijar presupuesto'}</button>`:''}
         </div>`;
       }
-      return `<div>${fila}${subs}</div>`;
-    }).join('');
-    cuerpo=`<div style="display:flex;flex-direction:column;gap:14px">${reparto}<div class="cats">${lista}</div>
-      <div class="pie">Barra larga = más dinero. La etiqueta dice cómo va frente a su presupuesto.<span class="d"> Pulsa una fila para ver sus subcategorías.</span></div></div>`;
+      return fila+kids;
+    }).join('')+'</div>';
   }
+  const nota = esG
+    ? `Barra = gasto sobre su presupuesto. Pulsa una categoría para ver el desglose.${sinGasto.length?` Sin gasto: ${sinGasto.map(f=>esc(f.cat.nombre)).join(', ')}.`:''}`
+    : 'Barra = ingreso frente a la categoría más alta del mes.';
+  cuerpo+=`<div class="pie">${nota}</div>`;
   $('secCat').innerHTML=`
     <div class="sec-h">
       <div class="l"><h3 class="h3">Por categoría</h3>${nOver?`<span class="cnt-over">${nOver} ${nOver===1?'superada':'superadas'}</span>`:''}</div>
@@ -977,14 +918,14 @@ function renderEvolucion(){
 
 function filaMov(t,largo){
   const d=new Date(t.fecha), c=catById(t.categoria_id);
-  const concepto=t.descripcion||c.nombre;
+  const d0=(t.descripcion||'').trim();
+  const concepto=d0?d0[0].toUpperCase()+d0.slice(1):c.nombre;
   const meta=largo ? `${fechaCorta(d)} · ${horaDe(d)} · ${nombrePath(t.categoria_id)}` : `${fechaCorta(d)} · ${c.nombre}`;
   const g=t.tipo==='gasto';
   return `<button class="mov" data-act="mov-editar" data-id="${t.id}">
-    <span class="mov-l"><i class="mov-dot" style="background:${g?'#3A3F33':ACC}"></i>
-      <span class="mov-t"><span class="mov-c">${esc(concepto)}</span><span class="mov-m">${esc(meta)}</span></span></span>
-    <span class="mov-r">${t.origen==='telegram'?'<span class="bot">BOT</span>':''}
-      <span class="mov-i num" style="color:${g?INK:ACC}">${g?MENOS:'+'}${eur(t.importe)}</span></span>
+    <span class="mov-t"><span class="mov-c">${esc(concepto)}</span>
+      <span class="mov-m"><span>${esc(meta)}</span>${t.origen==='telegram'?'<span class="bot">BOT</span>':''}</span></span>
+    <span class="mov-i num" style="color:${g?INK:ACC}">${g?MENOS:'+'}${eurC(t.importe)}</span>
   </button>`;
 }
 function renderMovimientos(){
@@ -1001,7 +942,7 @@ function renderMovimientos(){
   }
   $('secMov').innerHTML=`
     <div class="sec-h"><h3 class="h3">Últimos movimientos</h3>
-      ${lista.length?`<button class="linkbtn" data-act="mov-todos">Ver todo · ${lista.length}</button>`:''}</div>${cuerpo}`;
+      ${lista.length?`<button class="linkbtn" data-act="mov-todos" title="${lista.length} movimientos en ${nombre}">Ver todo</button>`:''}</div>${cuerpo}`;
 }
 
 function cuandoProx(p){

@@ -63,11 +63,26 @@ Si cambian las categorias hay que editar ese prompt en `build_wf.js`,
 regenerar el json y **reimportar el workflow en n8n** (n8n corre con su propia
 copia; tocar el json del repo no basta).
 
-Antes de importar hay que rellenar los tres placeholders del json:
-`PEGAR_TOKEN_DEL_BOT` (dos veces) y `PEGAR_GROQ_API_KEY`.
+Antes de importar hay que rellenar los placeholders del json:
+`PEGAR_TOKEN_DEL_BOT` (dos veces), `PEGAR_GROQ_API_KEY` y
+`PEGAR_SERVICE_ROLE_KEY` (dos veces, en "Guardar en Supabase").
 
-El workflow inserta en `transacciones` con `origen = 'telegram'` y sin `fecha`,
-para que la ponga la base de datos.
+Que sabe hacer:
+
+- **Varios movimientos a la vez**: "2€ cafe y 15 de gasolina", o una lista con
+  saltos de linea. Los mensajes pendientes se juntan en lotes de 10 y van a la
+  IA en una sola llamada (Groq gratis da 8000 tokens/min).
+- **Cola acumulada**: si n8n estaba apagado, al arrancar lee lo que mandaste
+  mientras tanto y cada movimiento lleva **la fecha en que enviaste el mensaje**.
+  Telegram solo guarda los mensajes **24 horas**: lo mas antiguo se pierde.
+- **Fechas pasadas**: "2€ en comida del 25 de agosto", "ayer", "el sabado". Se
+  cuentan desde el dia de envio, sin año es la mas reciente no futura, y se
+  guarda ese dia a mediodia (hora de Madrid).
+
+Si la IA o Supabase fallan, el offset de Telegram no avanza y el lote se
+reintenta en la siguiente vuelta; tras 6 fallos seguidos (~1 min) se descarta y
+el bot pide reenviarlo. Cada fila lleva `ref_externa = tg:<chat>:<mensaje>:<n>`
+(indice unico), asi que reprocesar un lote no duplica nada ni repite el ✅.
 
 ## Desplegar
 

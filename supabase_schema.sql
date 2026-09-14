@@ -41,6 +41,11 @@ create table if not exists transacciones (
 
 alter table transacciones add column if not exists user_id uuid not null default auth.uid() references auth.users(id) on delete cascade;
 
+-- Origen externo del bot (tg:<chat>:<mensaje>:<n>). Único: si n8n procesa un lote dos
+-- veces, el insert con on_conflict=ref_externa ignora lo ya guardado. NULL en las manuales.
+alter table transacciones add column if not exists ref_externa text;
+create unique index if not exists transacciones_ref_externa_key on transacciones (ref_externa);
+
 create index if not exists idx_tx_fecha     on transacciones (fecha desc);
 create index if not exists idx_tx_categoria on transacciones (categoria_id);
 

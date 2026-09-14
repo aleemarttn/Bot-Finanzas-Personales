@@ -6,14 +6,14 @@
         "rule": {
           "interval": [
             {
-              "field": "minutes",
-              "minutesInterval": 1
+              "field": "seconds",
+              "secondsInterval": 10
             }
           ]
         }
       },
       "id": "n1",
-      "name": "Cada 1 min",
+      "name": "Cada 10 s",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
@@ -46,6 +46,10 @@
               "value": "={{ $json.offset }}"
             },
             {
+              "name": "limit",
+              "value": "10"
+            },
+            {
               "name": "timeout",
               "value": "0"
             }
@@ -64,7 +68,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const data = $getWorkflowStaticData('global');\nconst updates = $input.first().json.result || [];\nconst out = [];\nlet maxId = data.tg_offset || 0;\n\nconst systemPrompt = \"Eres un asistente de finanzas personales. Conviertes un mensaje corto en español sobre un gasto o un ingreso en un objeto JSON.\\n\\nCategorías válidas (devuelve el \\\"categoria_id\\\" EXACTO):\\nGASTOS:\\n- 1  = Comida (genérico, si no sabes la subcategoría)\\n- 13 = Comida con Silvia (subcategoría de Comida)\\n- 12 = Restaurantes (subcategoría de Comida)\\n- 21 = Comida del trabajo (subcategoría de Comida)\\n- 2  = Supermercado (subcategoría de Comida)\\n- 3  = Coche\\n- 22 = Gasolina (subcategoría de Coche)\\n- 17 = Taller (subcategoría de Coche)\\n- 23 = Mantenimiento (subcategoría de Coche)\\n- 4  = Vivienda\\n- 5  = Ocio\\n- 6  = Salud\\n- 18 = Peluquería (subcategoría de Salud)\\n- 7  = Suscripciones\\n- 8  = Compras\\n- 15 = Deporte\\n- 16 = Educación\\n- 9  = Otros gastos\\nINGRESOS:\\n- 10 = Nómina\\n- 11 = Otros ingresos\\n- 19 = Dinero padre (subcategoría de Otros ingresos)\\n- 20 = Ingreso extra (subcategoría de Otros ingresos)\\n- 25 = Bizum (subcategoría de Otros ingresos)\\n\\nReglas:\\n- \\\"tipo\\\" = \\\"gasto\\\" salvo que claramente sea un ingreso (nómina, me han pagado, cobro...), entonces \\\"ingreso\\\".\\n- Elige la subcategoría más específica si encaja: \\\"cena con Silvia\\\" -> 13; \\\"comí en un restaurante\\\" -> 12; \\\"el menú de la oficina\\\" -> 21; \\\"la compra del súper\\\" -> 2; \\\"eché gasolina\\\" -> 22.\\n- \\\"importe\\\" en euros, número (acepta coma o punto decimal).\\n- \\\"descripcion\\\" = resumen corto del mensaje.\\n- Si no encaja en nada, usa 9 (gasto) u 11 (ingreso).\\n\\nDevuelve SOLO el JSON, sin texto extra:\\n{\\\"importe\\\": number, \\\"tipo\\\": \\\"gasto\\\"|\\\"ingreso\\\", \\\"categoria_id\\\": number, \\\"descripcion\\\": string}\";\n\nfor (const u of updates) {\n  if (u.update_id >= maxId) maxId = u.update_id + 1;\n  const msg = u.message;\n  if (msg && msg.text) {\n    if (msg.chat.id !== 950662101) continue; // solo tu chat\n    out.push({ json: { texto: msg.text, chat_id: msg.chat.id, systemPrompt } });\n  }\n}\ndata.tg_offset = maxId;\nreturn out;"
+        "jsCode": "const data = $getWorkflowStaticData('global');\nconst updates = $input.first().json.result || [];\nlet siguiente_offset = data.tg_offset || 0;\n\nconst systemPrompt = \"Eres un asistente de finanzas personales. Recibes uno o varios mensajes cortos en español, numerados [1], [2]..., cada uno con el día en que se envió. Extraes TODOS los gastos e ingresos que contengan.\\n\\nCategorías válidas (devuelve el \\\"categoria_id\\\" EXACTO):\\nGASTOS:\\n- 1  = Comida (genérico, si no sabes la subcategoría)\\n- 13 = Comida con Silvia (subcategoría de Comida)\\n- 12 = Restaurantes (subcategoría de Comida)\\n- 21 = Comida del trabajo (subcategoría de Comida)\\n- 2  = Supermercado (subcategoría de Comida)\\n- 3  = Coche\\n- 22 = Gasolina (subcategoría de Coche)\\n- 17 = Taller (subcategoría de Coche)\\n- 23 = Mantenimiento (subcategoría de Coche)\\n- 4  = Vivienda\\n- 5  = Ocio\\n- 6  = Salud\\n- 18 = Peluquería (subcategoría de Salud)\\n- 7  = Suscripciones\\n- 8  = Compras\\n- 15 = Deporte\\n- 16 = Educación\\n- 9  = Otros gastos\\nINGRESOS:\\n- 10 = Nómina\\n- 11 = Otros ingresos\\n- 19 = Dinero padre (subcategoría de Otros ingresos)\\n- 20 = Ingreso extra (subcategoría de Otros ingresos)\\n- 25 = Bizum (subcategoría de Otros ingresos)\\n\\nReglas:\\n- Un mensaje puede traer VARIOS movimientos (separados por comas, \\\"y\\\", saltos de línea...): crea uno por cada importe. \\\"n\\\" = número del mensaje del que sale.\\n- Si un mensaje no contiene ningún gasto ni ingreso con importe, no generes nada para él.\\n- \\\"tipo\\\" = \\\"gasto\\\" salvo que claramente sea un ingreso (nómina, me han pagado, cobro...), entonces \\\"ingreso\\\".\\n- Elige la subcategoría más específica si encaja: \\\"cena con Silvia\\\" -> 13; \\\"comí en un restaurante\\\" -> 12; \\\"el menú de la oficina\\\" -> 21; \\\"la compra del súper\\\" -> 2; \\\"eché gasolina\\\" -> 22.\\n- \\\"importe\\\" en euros, número (acepta coma o punto decimal).\\n- \\\"descripcion\\\" = resumen corto de ESE movimiento.\\n- Si no encaja en nada, usa 9 (gasto) u 11 (ingreso).\\n- \\\"fecha\\\" (\\\"YYYY-MM-DD\\\"): SOLO si el mensaje dice cuándo fue (\\\"ayer\\\", \\\"el sábado\\\", \\\"del 25 de agosto\\\", \\\"el 3/9\\\"). Calcúlala respecto al día de envío de ESE mensaje. Sin año, usa el más reciente que no sea posterior al día de envío. Una fecha dicha una vez vale para todos los movimientos de ese mensaje. Si no se dice fecha, \\\"fecha\\\": null.\\n\\nEjemplo. Entrada:\\n[1] (enviado el lunes 2026-09-14) 2€ café y 15 de gasolina\\n[2] (enviado el lunes 2026-09-14) 2€ en comida del 25 de agosto\\nSalida:\\n{\\\"movimientos\\\":[{\\\"n\\\":1,\\\"importe\\\":2,\\\"tipo\\\":\\\"gasto\\\",\\\"categoria_id\\\":1,\\\"descripcion\\\":\\\"Café\\\",\\\"fecha\\\":null},{\\\"n\\\":1,\\\"importe\\\":15,\\\"tipo\\\":\\\"gasto\\\",\\\"categoria_id\\\":22,\\\"descripcion\\\":\\\"Gasolina\\\",\\\"fecha\\\":null},{\\\"n\\\":2,\\\"importe\\\":2,\\\"tipo\\\":\\\"gasto\\\",\\\"categoria_id\\\":1,\\\"descripcion\\\":\\\"Comida\\\",\\\"fecha\\\":\\\"2026-08-25\\\"}]}\\n\\nDevuelve SOLO el JSON, sin texto extra:\\n{\\\"movimientos\\\":[{\\\"n\\\": number, \\\"importe\\\": number, \\\"tipo\\\": \\\"gasto\\\"|\\\"ingreso\\\", \\\"categoria_id\\\": number, \\\"descripcion\\\": string, \\\"fecha\\\": \\\"YYYY-MM-DD\\\"|null}]}\";\nconst DIAS = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];\nconst diaMadrid = d => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);\n\nconst mensajes = [];\nfor (const u of updates) {\n  if (u.update_id >= siguiente_offset) siguiente_offset = u.update_id + 1;\n  const msg = u.message;\n  if (!msg || !msg.text) continue;\n  if (msg.chat.id !== 950662101) continue; // solo tu chat\n  if (msg.text.startsWith('/')) continue;    // /start y demás comandos\n  const enviado = new Date(msg.date * 1000); // cuándo lo mandaste, no cuándo lo lee n8n\n  const dia = diaMadrid(enviado);\n  mensajes.push({\n    n: mensajes.length + 1,\n    message_id: msg.message_id,\n    texto: msg.text,\n    enviado_iso: enviado.toISOString(),\n    dia_envio: dia,\n    dia_semana: DIAS[new Date(dia + 'T12:00:00Z').getUTCDay()]\n  });\n}\nif (!mensajes.length) {            // nada que apuntar (o solo comandos / otros chats): se descartan ya\n  data.tg_offset = siguiente_offset;\n  return [];\n}\n\nconst entrada = mensajes.map(m => '[' + m.n + '] (enviado el ' + m.dia_semana + ' ' + m.dia_envio + ') ' + m.texto).join('\\n');\nreturn [{ json: { chat_id: 950662101, mensajes, entrada, systemPrompt, siguiente_offset } }];"
       },
       "id": "n4",
       "name": "Procesar updates",
@@ -90,8 +94,10 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"model\": \"llama-3.3-70b-versatile\",\n  \"response_format\": { \"type\": \"json_object\" },\n  \"messages\": [\n    { \"role\": \"system\", \"content\": {{ JSON.stringify($json.systemPrompt) }} },\n    { \"role\": \"user\", \"content\": {{ JSON.stringify($json.texto) }} }\n  ]\n}",
-        "options": {}
+        "jsonBody": "={\n  \"model\": \"openai/gpt-oss-120b\",\n  \"response_format\": { \"type\": \"json_object\" },\n  \"messages\": [\n    { \"role\": \"system\", \"content\": {{ JSON.stringify($json.systemPrompt) }} },\n    { \"role\": \"user\", \"content\": {{ JSON.stringify($json.entrada) }} }\n  ]\n}",
+        "options": {
+          "timeout": 30000
+        }
       },
       "id": "n5",
       "name": "IA (Groq) parsear",
@@ -100,14 +106,15 @@
       "position": [
         780,
         300
-      ]
+      ],
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
-        "jsCode": "const ai = JSON.parse($json.choices[0].message.content);\nconst chat_id = $('Procesar updates').item.json.chat_id;\nreturn [{ json: {\n  importe: ai.importe,\n  tipo: ai.tipo,\n  categoria_id: ai.categoria_id,\n  descripcion: ai.descripcion || null,\n  chat_id\n}}];"
+        "jsCode": "const CATS = {\"1\":\"Comida\",\"2\":\"Supermercado\",\"3\":\"Coche\",\"4\":\"Vivienda\",\"5\":\"Ocio\",\"6\":\"Salud\",\"7\":\"Suscripciones\",\"8\":\"Compras\",\"9\":\"Otros gastos\",\"10\":\"Nómina\",\"11\":\"Otros ingresos\",\"12\":\"Restaurantes\",\"13\":\"Comida con Silvia\",\"15\":\"Deporte\",\"16\":\"Educación\",\"17\":\"Taller\",\"18\":\"Peluquería\",\"19\":\"Dinero padre\",\"20\":\"Ingreso extra\",\"21\":\"Comida del trabajo\",\"22\":\"Gasolina\",\"23\":\"Mantenimiento\",\"25\":\"Bizum\"};\nconst INGRESOS = [10,11,19,20,25];\nconst USER_ID = \"0d24ebb9-7050-4d4c-9a1d-0f7c15523ad8\";\nconst TZ = 'Europe/Madrid';\n\nconst { chat_id, mensajes, siguiente_offset } = $('Procesar updates').first().json;\nconst diaMadrid = d => new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);\nconst offsetMadrid = ymd => new Intl.DateTimeFormat('en-US', { timeZone: TZ, timeZoneName: 'longOffset' })\n  .formatToParts(new Date(ymd + 'T12:00:00Z')).find(p => p.type === 'timeZoneName').value.replace('GMT', '') || '+00:00';\nconst esDiaReal = ymd => /^\\d{4}-\\d{2}-\\d{2}$/.test(ymd) && new Date(ymd + 'T12:00:00Z').toISOString().slice(0, 10) === ymd;\nconst eur = x => x.toLocaleString('es-ES', { minimumFractionDigits: x % 1 ? 2 : 0, maximumFractionDigits: 2 }) + ' €';\nconst hoy = diaMadrid(new Date());\nconst corto = ymd => ymd.slice(8, 10) + '/' + ymd.slice(5, 7) + (ymd.slice(0, 4) === hoy.slice(0, 4) ? '' : '/' + ymd.slice(0, 4));\n\nlet movs = null;\ntry {\n  const ai = JSON.parse($input.first().json.choices[0].message.content);\n  movs = Array.isArray(ai.movimientos) ? ai.movimientos : null;\n} catch (e) {}\nif (!movs) return [{ json: { chat_id, mensajes, siguiente_offset, ia_fallo: true, filas: [], lineas: {}, sin_entender: [] } }];\n\nconst filas = [], lineas = {}, usados = {};\nfor (const mov of movs) {\n  const m = mensajes.find(x => x.n === Number(mov.n)) || (mensajes.length === 1 ? mensajes[0] : null);\n  if (!m) continue;\n\n  let importe = typeof mov.importe === 'string' ? parseFloat(mov.importe.replace(',', '.')) : Number(mov.importe);\n  if (!(importe > 0)) continue;\n  importe = Math.round(importe * 100) / 100;\n\n  let cat = Number(mov.categoria_id);\n  if (!CATS[cat]) cat = mov.tipo === 'ingreso' ? 11 : 9;\n  const tipo = INGRESOS.includes(cat) ? 'ingreso' : 'gasto';   // la categoría manda\n\n  // Sin fecha dicha: el momento en que enviaste el mensaje. Con fecha: ese día a mediodía (hora de Madrid).\n  let fecha = m.enviado_iso, dia = m.dia_envio;\n  let d = typeof mov.fecha === 'string' ? mov.fecha : '';\n  for (let i = 0; i < 2 && esDiaReal(d) && d > m.dia_envio; i++) d = (Number(d.slice(0, 4)) - 1) + d.slice(4);   // \"25 de agosto\" nunca es futuro\n  if (esDiaReal(d) && d < m.dia_envio) {\n    dia = d;\n    fecha = d + 'T12:00:00' + offsetMadrid(d);\n  }\n\n  usados[m.n] = (usados[m.n] || 0) + 1;\n  const ref_externa = 'tg:' + chat_id + ':' + m.message_id + ':' + usados[m.n];   // evita duplicados si un lote se procesa dos veces\n  filas.push({\n    fecha, importe, tipo, categoria_id: cat,\n    descripcion: String(mov.descripcion || '').slice(0, 200) || null,\n    origen: 'telegram',\n    user_id: USER_ID,\n    ref_externa\n  });\n  lineas[ref_externa] = (tipo === 'ingreso' ? '+' : '') + eur(importe) + ' en ' + CATS[cat] + (dia !== hoy ? ' · ' + corto(dia) : '');\n}\n\nconst sin_entender = mensajes.filter(m => !usados[m.n]).map(m => m.texto);\nreturn [{ json: { chat_id, mensajes, siguiente_offset, ia_fallo: false, filas, lineas, sin_entender } }];"
       },
       "id": "n6",
-      "name": "Construir registro",
+      "name": "Construir registros",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -119,26 +126,39 @@
       "parameters": {
         "method": "POST",
         "url": "https://jtkhvvkfgqotvhljtybp.supabase.co/rest/v1/transacciones",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "on_conflict",
+              "value": "ref_externa"
+            },
+            {
+              "name": "select",
+              "value": "ref_externa"
+            }
+          ]
+        },
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "apikey",
-              "value": "sb_publishable_BVJ9sAnDj4tB25sVsZss8A_26cm57wL"
+              "value": "PEGAR_SERVICE_ROLE_KEY"
             },
             {
               "name": "Authorization",
-              "value": "Bearer sb_publishable_BVJ9sAnDj4tB25sVsZss8A_26cm57wL"
+              "value": "Bearer PEGAR_SERVICE_ROLE_KEY"
             },
             {
               "name": "Prefer",
-              "value": "return=minimal"
+              "value": "resolution=ignore-duplicates,return=representation"
             }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"importe\": {{ $json.importe }},\n  \"tipo\": {{ JSON.stringify($json.tipo) }},\n  \"categoria_id\": {{ $json.categoria_id }},\n  \"descripcion\": {{ JSON.stringify($json.descripcion) }},\n  \"origen\": \"telegram\"\n}",
+        "jsonBody": "={{ JSON.stringify($json.filas) }}",
         "options": {}
       },
       "id": "n7",
@@ -148,6 +168,22 @@
       "position": [
         1220,
         300
+      ],
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const MAX_FALLOS = 6;\nconst b = $('Construir registros').first().json;\nconst data = $getWorkflowStaticData('global');\nconst cita = t => '«' + (t.length > 80 ? t.slice(0, 80) + '…' : t) + '»';\n\nconst devueltas = $input.all().map(i => i.json);\nconst errSupa = devueltas.find(j => j.error);\nif (b.ia_fallo || errSupa) {\n  data.fallos = (data.fallos || 0) + 1;\n  if (data.fallos < MAX_FALLOS) return [];   // los mensajes siguen en Telegram: se reintenta en 10 s\n  data.fallos = 0;\n  data.tg_offset = b.siguiente_offset;       // lote imposible: se descarta para no atascar la cola\n  const n = b.mensajes.length;\n  const motivo = b.ia_fallo ? 'la IA no responde' : 'Supabase da error (' + (errSupa.error.message || errSupa.error) + ')';\n  return [{ json: { chat_id: b.chat_id, texto: '⚠️ No he podido apuntar ' + (n === 1 ? 'tu mensaje' : 'estos ' + n + ' mensajes') +\n    ': ' + motivo + '. Reenvía:\\n' + b.mensajes.map(m => '• ' + cita(m.texto)).join('\\n') } }];\n}\ndata.fallos = 0;\ndata.tg_offset = b.siguiente_offset;\n\n// Supabase devuelve solo las filas insertadas de verdad: si el lote ya estaba guardado no se repite el ✅\nconst nuevas = new Set(devueltas.flatMap(j => Array.isArray(j.data) ? j.data : [j]).map(f => f && f.ref_externa).filter(Boolean));\nif (b.filas.length && !nuevas.size) return [];\nconst lineas = Object.keys(b.lineas).filter(r => nuevas.has(r)).map(r => b.lineas[r]);\n\nconst partes = [];\nif (lineas.length === 1) partes.push('✅ Apuntado: ' + lineas[0]);\nelse if (lineas.length > 1) partes.push('✅ Apuntados ' + lineas.length + ' movimientos:\\n' + lineas.map(l => '• ' + l).join('\\n'));\nif (b.sin_entender.length) partes.push('🤷 No he entendido:\\n' + b.sin_entender.map(t => '• ' + cita(t)).join('\\n'));\nif (!partes.length) return [];\nreturn [{ json: { chat_id: b.chat_id, texto: partes.join('\\n\\n').slice(0, 4000) } }];",
+        "mode": "runOnceForAllItems"
+      },
+      "id": "n8",
+      "name": "Preparar respuesta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        300
       ]
     },
     {
@@ -156,21 +192,21 @@
         "url": "https://api.telegram.org/botPEGAR_TOKEN_DEL_BOT/sendMessage",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"chat_id\": {{ $('Construir registro').item.json.chat_id }},\n  \"text\": {{ JSON.stringify(\"✅ Apuntado: \" + $('Construir registro').item.json.importe + \" € (cat \" + $('Construir registro').item.json.categoria_id + \")\") }}\n}",
+        "jsonBody": "={\n  \"chat_id\": {{ $json.chat_id }},\n  \"text\": {{ JSON.stringify($json.texto) }}\n}",
         "options": {}
       },
-      "id": "n8",
+      "id": "n9",
       "name": "Confirmar en Telegram",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1440,
+        1660,
         300
       ]
     }
   ],
   "connections": {
-    "Cada 1 min": {
+    "Cada 10 s": {
       "main": [
         [
           {
@@ -218,14 +254,14 @@
       "main": [
         [
           {
-            "node": "Construir registro",
+            "node": "Construir registros",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Construir registro": {
+    "Construir registros": {
       "main": [
         [
           {
@@ -237,6 +273,17 @@
       ]
     },
     "Guardar en Supabase": {
+      "main": [
+        [
+          {
+            "node": "Preparar respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar respuesta": {
       "main": [
         [
           {

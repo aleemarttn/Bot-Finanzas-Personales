@@ -6,8 +6,12 @@ Los datos viven en Supabase y se registran a mano o via un bot de Telegram + n8n
 ## Como funciona
 
 - **index.html**: un unico archivo, tambien PWA instalable en el movil
-  (`manifest.webmanifest` + `sw.js` + los tres iconos). Usa Chart.js y
-  supabase-js por CDN. Sin build.
+  (`manifest.webmanifest` + `sw.js` + los tres iconos). Usa supabase-js por
+  CDN y las fuentes Onest y Geist Mono de Google Fonts. Sin build ni librerias
+  de graficos: barras y reparto se pintan con HTML y CSS.
+- **Diseño**: oscuro con acento verde agua (`#4FD8AC`) y coral (`#FF7A66`) para
+  alertas. Movil a una columna con boton fijo abajo; a partir de 1000px, panel
+  de escritorio. La referencia esta en `design_handoff_chicha_finanzas/`.
 - **Datos**: Supabase (Postgres). Hay login real (Supabase Auth) y RLS por
   usuario: cada tabla tiene `user_id` y una politica `propietario`
   (`auth.uid() = user_id`), asi que el front solo ve tus propios datos. Si no

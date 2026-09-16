@@ -1062,13 +1062,16 @@ async function conBoton(btn,texto,fn){
 }
 const opcionesCat = (tipo,sel,vacio='— sin categoría —') =>
   `<option value="">${vacio}</option>`+topCats(tipo).map(c=>`<option value="${c.id}" ${c.id===sel?'selected':''}>${esc(c.nombre)}</option>`).join('');
-const opcionesFiltroCat = () => {
+const opcionesFiltroCat = (tipoFiltro) => {
   const grupo=(tipo,etiqueta)=>{
     const opts=topCats(tipo).map(c=>`<option value="${c.id}">${esc(c.nombre)}</option>`+
       subsDe(c.id).map(s=>`<option value="${s.id}">— ${esc(s.nombre)}</option>`).join('')).join('');
-    return opts?`<optgroup label="${etiqueta}">${opts}</optgroup>`:'';
+    if(!opts) return '';
+    return tipoFiltro?opts:`<optgroup label="${etiqueta}">${opts}</optgroup>`;
   };
-  return `<option value="">Todas las categorías</option>${grupo('gasto','Gastos')}${grupo('ingreso','Ingresos')}`;
+  const tipos=tipoFiltro?[tipoFiltro]:['gasto','ingreso'];
+  const etiquetas={gasto:'Gastos',ingreso:'Ingresos'};
+  return `<option value="">Todas las categorías</option>`+tipos.map(t=>grupo(t,etiquetas[t])).join('');
 };
 
 /* ====== Añadir / editar movimiento ====== */
@@ -1203,18 +1206,32 @@ async function eliminarMovimiento(id){
   return true;
 }
 function abrirTodosMovimientos(){
-  let filtroCat='';
+  let filtroTipo='', filtroCat='';
   const h=abrirHoja(`<div class="sh-h"><span class="sh-t" data-tit></span></div>
+    <div class="seg" role="group" aria-label="Tipo" data-filtro-tipo>
+      <button class="on" data-t="">Todos</button><button data-t="gasto">Gastos</button><button data-t="ingreso">Ingresos</button>
+    </div>
     <div class="field"><select class="inp" data-filtro-cat>${opcionesFiltroCat()}</select></div>
     <div class="scroll-list" data-lista></div>`,{
     etiqueta:'Movimientos del mes',
-    alMontar:h=>{ h.q('[data-filtro-cat]').onchange=e=>{ filtroCat=e.target.value; h.refrescar(); }; h.refrescar(); },
+    alMontar:h=>{
+      h.q('[data-filtro-tipo]').querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{
+        filtroTipo=b.dataset.t; filtroCat='';
+        h.q('[data-filtro-tipo]').querySelectorAll('[data-t]').forEach(x=>x.classList.toggle('on',x===b));
+        h.q('[data-filtro-cat]').innerHTML=opcionesFiltroCat(filtroTipo||null);
+        h.refrescar();
+      });
+      h.q('[data-filtro-cat]').onchange=e=>{ filtroCat=e.target.value; h.refrescar(); };
+      h.refrescar();
+    },
     refrescar:h=>{
       const todos=movsMes(mesSel), p=partesMes(mesSel);
       const catId=filtroCat?parseInt(filtroCat):null;
-      const lista=catId?todos.filter(t=>t.categoria_id===catId||catById(t.categoria_id).padre_id===catId):todos;
+      const lista=todos.filter(t=>
+        (!filtroTipo||t.tipo===filtroTipo) &&
+        (!catId||t.categoria_id===catId||catById(t.categoria_id).padre_id===catId));
       h.q('[data-tit]').textContent=`Movimientos de ${p.nombre} · ${lista.length}`;
-      h.q('[data-lista]').innerHTML=lista.length?lista.map(t=>filaMov(t,true)).join(''):`<div class="hint" style="padding:18px">${catId?'No hay movimientos con esa categoría en este mes.':'No quedan movimientos en este mes.'}</div>`;
+      h.q('[data-lista]').innerHTML=lista.length?lista.map(t=>filaMov(t,true)).join(''):`<div class="hint" style="padding:18px">${(filtroTipo||catId)?'No hay movimientos con ese filtro en este mes.':'No quedan movimientos en este mes.'}</div>`;
     }
   });
 }
